@@ -91,7 +91,32 @@ interface Tag extends BaseTag {
 
 type SAXTag = Tag | QualifiedTag
 
-export class SAXParser {
+interface ParserContext {
+  q: string
+  c: string
+  tags: SAXTag[]
+  closed: boolean
+  buffers: { [name: string]: string }
+  closedRoot: boolean
+  sawRoot: boolean
+  tag: SAXTag | null
+  error: any
+  state: STATE
+  bufferCheckPosition: number
+  strictEntities: boolean
+  ENTITIES: { [name: string]: string }
+  attribList: [string, string][]
+  trackPosition: boolean
+  position: number
+  line: number
+  column: number
+  startTagPosition: number
+  ns: Namespace | null
+
+}
+
+
+export class SAXParser implements ParserContext {
 
   q = ''
   c = ''
@@ -101,8 +126,8 @@ export class SAXParser {
   buffers: { [name: string]: string } = {}
   closedRoot = false
   sawRoot = false
-  tag: any = null
-  error: any = null
+  tag: SAXTag | null = null
+  error: Error | null = null
   state = STATE.BEGIN
   strictEntities: boolean
   ENTITIES: { [name: string]: string }
@@ -112,7 +137,7 @@ export class SAXParser {
   line = 0
   column = 0
   startTagPosition: number = 0
-  ns: object | null = null
+  ns: Namespace | null = null
 
   constructor(readonly strict: boolean, readonly opt: SAXOptions = {}) {
     clearBuffers(this)
@@ -492,6 +517,9 @@ export class SAXParser {
             continue
           } else {
             strictFail(parser, 'Attribute without value')
+            if (!parser.tag) {
+              throw "Invalid state missing tag";
+            }
             parser.tag.attributes[parser.buffers.attribName] = ''
             parser.buffers.attribValue = ''
             emitNode(parser, 'onattribute', {
@@ -1265,14 +1293,14 @@ function strictFail(parser: SAXParser, message: string) {
   if (typeof parser !== 'object' || !(parser instanceof SAXParser)) {
     throw new Error('bad call to strictFail')
   }
-  if ((parser as any).strict) {
+  if (parser.strict) {
     error(parser, message)
   }
 }
 
 function newTag(parser: SAXParser) {
   const parent = parser.tags[parser.tags.length - 1] || parser
-  const tag = parser.tag = { name: parser.buffers.tagName, attributes: {} }
+  const tag = parser.tag = { name: parser.buffers.tagName, attributes: {} } as SAXTag
 
   // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
   if (parser.opt.xmlns) {
@@ -1300,7 +1328,7 @@ function qname(name: string, attribute?: boolean) {
 function attrib(parser: SAXParser) {
 
   if (parser.attribList.indexOf([parser.buffers.attribName, parser.buffers.attribValue]) !== -1 ||
-    parser.tag.attributes.hasOwnProperty(parser.buffers.attribName)) {
+    (parser.tag && parser.tag.attributes.hasOwnProperty(parser.buffers.attribName))) {
     parser.buffers.attribName = parser.buffers.attribValue = ''
     return
   }
@@ -1321,10 +1349,10 @@ function attrib(parser: SAXParser) {
           'xmlns: prefix must be bound to ' + XMLNS_NAMESPACE + '\n' +
           'Actual: ' + parser.buffers.attribValue)
       } else {
-        const tag = parser.tag
-        const parent = parser.tags[parser.tags.length - 1] || parser
-        if (tag.ns === (parent as QualifiedTag).ns) {
-          tag.ns = Object.create((parent as QualifiedTag).ns)
+        const tag = parser.tag as QualifiedTag
+        const parent = parser.tags[parser.tags.length - 1] as QualifiedTag || parser
+        if (tag.ns === parent.ns) {
+          tag.ns = Object.create(parent.ns)
         }
         tag.ns[local] = parser.buffers.attribValue
       }
@@ -1336,6 +1364,9 @@ function attrib(parser: SAXParser) {
     parser.attribList.push([parser.buffers.attribName, parser.buffers.attribValue])
   } else {
     // in non-xmlns mode, we can emit the event right away
+    if (!parser.tag) {
+      throw "Invalid state missing tag";
+    }
     parser.tag.attributes[parser.buffers.attribName] = parser.buffers.attribValue
     emitNode(parser, 'onattribute', {
       name: parser.buffers.attribName,
@@ -1349,7 +1380,7 @@ function attrib(parser: SAXParser) {
 function openTag(parser: SAXParser, selfClosing?: boolean) {
   if (parser.opt.xmlns) {
     // emit namespace binding events
-    const tag = parser.tag
+    const tag = parser.tag as QualifiedTag
 
     // add namespace info to tag
     const qn = qname(parser.buffers.tagName)
@@ -1399,17 +1430,23 @@ function openTag(parser: SAXParser, selfClosing?: boolean) {
           JSON.stringify(prefix))
         a.uri = prefix
       }
+      if (!parser.tag) {
+        throw 'invalid state missing tag'
+      }
       parser.tag.attributes[name] = a
       emitNode(parser, 'onattribute', a)
     }
     parser.attribList.length = 0
   }
 
+  if (!parser.tag) {
+    throw 'invalid state missing tag'
+  }
   parser.tag.isSelfClosing = !!selfClosing
 
   // process the tag
   parser.sawRoot = true
-  parser.tags.push(parser.tag)
+  parser.tags.push(parser.tag as SAXTag)
   emitNode(parser, 'onopentag', parser.tag)
   if (!selfClosing) {
     parser.state = STATE.TEXT
