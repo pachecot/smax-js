@@ -954,7 +954,7 @@ function parseEntity(parser: SAXParser) {
     return '&' + parser.entity + ';'
   }
 
-  return String.fromCodePoint(num)
+  return fromCodePoint(num)
 }
 
 function beginWhiteSpace(parser: SAXParser, c: string) {
@@ -1498,7 +1498,7 @@ function write(chunk: any) {
 
 /*! http://mths.be/fromcodepoint v0.1.0 by @mathias */
 /* istanbul ignore next */
-if (!String.fromCodePoint) {
+const fromCodePoint = String.fromCodePoint ||
   (function () {
     const stringFromCharCode = String.fromCharCode
     const floor = Math.floor
@@ -1539,15 +1539,5 @@ if (!String.fromCodePoint) {
       }
       return result
     }
-    /* istanbul ignore next */
-    if (Object.defineProperty) {
-      Object.defineProperty(String, 'fromCodePoint', {
-        value: fromCodePoint,
-        configurable: true,
-        writable: true
-      })
-    } else {
-      String.fromCodePoint = fromCodePoint
-    }
+    return fromCodePoint
   }())
-}
