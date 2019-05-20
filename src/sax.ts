@@ -1,3 +1,5 @@
+import { Duplex } from "stream";
+import { NodeStringDecoder } from "string_decoder";
 
 
 export const parser = function (strict: boolean, opt: SAXOptions) {
@@ -190,13 +192,6 @@ function flushBuffers(parser) {
 }
 
 
-let Stream
-try {
-  Stream = require('stream').Stream
-} catch (ex) {
-  Stream = function () { }
-}
-
 const streamWraps = EVENTS.filter(function (ev: string) {
   return ev !== 'error' && ev !== 'end'
 })
@@ -205,90 +200,114 @@ export function createStream(strict, opt) {
   return new SAXStream(strict, opt)
 }
 
-export function SAXStream(strict: boolean, opt: SAXOptions) {
+export class SAXStream extends Duplex {
 
-  Stream.apply(this)
+  writable = true
+  readable = true
+  _parser: SAXParser
+  _decoder: NodeStringDecoder | undefined = undefined
 
-  this._parser = new SAXParser(strict, opt)
-  this.writable = true
-  this.readable = true
+  constructor(strict: boolean, opt: SAXOptions) {
+    super()
+    this._parser = new SAXParser(strict, opt)
+    const me = this
+    this._parser.onend = function () {
+      me.emit('end')
+    }
+    this._parser.onerror = function (er) {
+      me.emit('error', er)
+      // if didn't throw, then means error was handled.
+      // go ahead and clear error, so we can write again.
+      me._parser.error = null
+    }
 
-  const me = this
-
-  this._parser.onend = function () {
-    me.emit('end')
-  }
-
-  this._parser.onerror = function (er) {
-    me.emit('error', er)
-
-    // if didn't throw, then means error was handled.
-    // go ahead and clear error, so we can write again.
-    me._parser.error = null
-  }
-
-  this._decoder = null
-
-  streamWraps.forEach(function (ev: string) {
-    Object.defineProperty(me, 'on' + ev, {
-      get: function () {
-        return me._parser['on' + ev]
-      },
-      set: function (h) {
-        if (!h) {
-          me.removeAllListeners(ev)
-          me._parser['on' + ev] = h
-          return h
-        }
-        me.on(ev, h)
-      },
-      enumerable: true,
-      configurable: false
+    streamWraps.forEach(function (ev: string) {
+      Object.defineProperty(me, 'on' + ev, {
+        get: function () {
+          return me._parser['on' + ev]
+        },
+        set: function (h) {
+          if (!h) {
+            me.removeAllListeners(ev)
+            me._parser['on' + ev] = h
+            return h
+          }
+          me.on(ev, h)
+        },
+        enumerable: true,
+        configurable: false
+      })
     })
-  })
-}
-
-SAXStream.prototype = Object.create(Stream.prototype, {
-  constructor: {
-    value: SAXStream
   }
-})
 
-SAXStream.prototype.write = function (data: any) {
-  if (typeof Buffer === 'function' &&
-    typeof Buffer.isBuffer === 'function' &&
-    Buffer.isBuffer(data)) {
-    if (!this._decoder) {
-      const SD = require('string_decoder').StringDecoder
-      this._decoder = new SD('utf8')
+
+  queue: any[] = []
+  _push(chunk?: any) {
+
+    if (chunk) {
+      this.queue.push(chunk)
     }
-    data = this._decoder.write(data)
-  }
 
-  this._parser.write(data.toString())
-  this.emit('data', data)
-  return true
-}
-
-SAXStream.prototype.end = function (chunk) {
-  if (chunk && chunk.length) {
-    this.write(chunk)
-  }
-  this._parser.end()
-  return true
-}
-
-SAXStream.prototype.on = function (ev: string, handler) {
-  const me = this
-  if (!me._parser['on' + ev] && streamWraps.indexOf(ev) !== -1) {
-    me._parser['on' + ev] = function () {
-      const args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments)
-      args.splice(0, 0, ev)
-      me.emit.apply(me, args)
+    if (!this.isPaused() && this.queue.length > 0) {
+      let _continue = true;
+      while (_continue && this.queue.length > 0) {
+        const action = this.queue.shift()
+        _continue = this.push(action);
+      }
     }
   }
 
-  return Stream.prototype.on.call(me, ev, handler)
+
+  _write(chunk: any, _encoding: string, callback: (error?: Error | null) => void): void {
+    if (typeof Buffer === 'function' && typeof Buffer.isBuffer === 'function' && Buffer.isBuffer(chunk)) {
+      if (!this._decoder) {
+        const SD = require('string_decoder').StringDecoder
+        this._decoder = new SD('utf8')
+      }
+      chunk = (this._decoder as NodeStringDecoder).write(chunk)
+    }
+    this._parser.write(chunk.toString())
+    this._push(chunk)
+    callback()
+  }
+
+  _final(callback: (error?: Error | null) => void): void {
+    this._parser.end()
+    callback();
+  }
+
+  _read(_size: number): void {
+    this._push()
+  }
+
+  on(ev: string, handler) {
+    const me = this
+    if (!me._parser['on' + ev] && streamWraps.indexOf(ev) !== -1) {
+      me._parser['on' + ev] = function () {
+        const args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments)
+        args.splice(0, 0, ev)
+        me.emit.apply(me, args)
+      }
+    }
+
+    return super.on(ev, handler)
+  }
+
+  // Events
+  ontext?: (t: string) => void;
+  ondoctype?: (doctype: string) => void;
+  onprocessinginstruction?: (node: { name: string; body: string }) => void;
+  onopentag?: (tag: SAXTag) => void;
+  onclosetag?: (tagName: string) => void;
+  onattribute?: (attr: { name: string; value: string }) => void;
+  oncomment?: (comment: string) => void;
+  onopencdata?: () => void;
+  oncdata?: (cdata: string) => void;
+  onclosecdata?: () => void;
+  onopennamespace?: (ns: { prefix: string; uri: string }) => void;
+  onclosenamespace?: (ns: { prefix: string; uri: string }) => void;
+  onready?: () => void;
+
 }
 
 // this really needs to be replaced with character classes.
