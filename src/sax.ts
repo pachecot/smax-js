@@ -806,7 +806,7 @@ export class SAXStream extends Duplex {
     const me = this
     if (!me._parser['on' + ev] && streamWraps.indexOf(ev) !== -1) {
       me._parser['on' + ev] = function () {
-        const args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments)
+        const args = Array.from(arguments) as [string, ...any[]]
         args.splice(0, 0, ev)
         me.emit.apply(me, args)
       }
