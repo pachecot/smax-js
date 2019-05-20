@@ -70,13 +70,14 @@ export class SAXParser {
   bufferCheckPosition = MAX_BUFFER_LENGTH
   tags: SAXTag[] = []
   closed = false
+  buffers: { [name: string]: string } = {}
   closedRoot = false
   sawRoot = false
   tag: any = null
   error: any = null
   state = STATE.BEGIN
   strictEntities: boolean
-  ENTITIES: object
+  ENTITIES: { [name: string]: string }
   attribList: [string, string][] = []
   trackPosition = false
   position = 0
@@ -84,18 +85,6 @@ export class SAXParser {
   column = 0
   startTagPosition: number = 0
   ns: object | null = null
-
-  attribName: string = ''
-  attribValue: string = ''
-  tagName: string = ''
-  textNode: string = ''
-  entity: string = ''
-  sgmlDecl = ''
-  procInstName = ''
-  procInstBody = ''
-  cdata = ''
-  comment = ''
-  doctype: boolean | string = ''
 
   constructor(readonly strict: boolean, readonly opt: SAXOptions = {}) {
     clearBuffers(this)
@@ -181,7 +170,7 @@ export class SAXParser {
                 }
               }
             }
-            parser.textNode += chunk.substring(starti, i - 1)
+            parser.buffers.textNode += chunk.substring(starti, i - 1)
           }
           if (c === '<' && !(parser.sawRoot && parser.closedRoot && !parser.strict)) {
             parser.state = STATE.OPEN_WAKA
@@ -193,7 +182,7 @@ export class SAXParser {
             if (c === '&') {
               parser.state = STATE.TEXT_ENTITY
             } else {
-              parser.textNode += c
+              parser.buffers.textNode += c
             }
           }
           continue
@@ -202,18 +191,18 @@ export class SAXParser {
           // either a /, ?, !, or text is coming next.
           if (c === '!') {
             parser.state = STATE.SGML_DECL
-            parser.sgmlDecl = ''
+            parser.buffers.sgmlDecl = ''
           } else if (isWhitespace(c)) {
             // wait for it...
           } else if (isMatch(nameStart, c)) {
             parser.state = STATE.OPEN_TAG
-            parser.tagName = c
+            parser.buffers.tagName = c
           } else if (c === '/') {
             parser.state = STATE.CLOSE_TAG
-            parser.tagName = ''
+            parser.buffers.tagName = ''
           } else if (c === '?') {
             parser.state = STATE.PROC_INST
-            parser.procInstName = parser.procInstBody = ''
+            parser.buffers.procInstName = parser.buffers.procInstBody = ''
           } else {
             strictFail(parser, 'Unencoded <')
             // if there was some whitespace, then add that in.
@@ -221,38 +210,38 @@ export class SAXParser {
               const pad = parser.position - parser.startTagPosition
               c = new Array(pad).join(' ') + c
             }
-            parser.textNode += '<' + c
+            parser.buffers.textNode += '<' + c
             parser.state = STATE.TEXT
           }
           continue
 
         case STATE.SGML_DECL:
-          if ((parser.sgmlDecl + c).toUpperCase() === CDATA) {
+          if ((parser.buffers.sgmlDecl + c).toUpperCase() === CDATA) {
             emitNode(parser, 'onopencdata')
             parser.state = STATE.CDATA
-            parser.sgmlDecl = ''
-            parser.cdata = ''
-          } else if (parser.sgmlDecl + c === '--') {
+            parser.buffers.sgmlDecl = ''
+            parser.buffers.cdata = ''
+          } else if (parser.buffers.sgmlDecl + c === '--') {
             parser.state = STATE.COMMENT
-            parser.comment = ''
-            parser.sgmlDecl = ''
-          } else if ((parser.sgmlDecl + c).toUpperCase() === DOCTYPE) {
+            parser.buffers.comment = ''
+            parser.buffers.sgmlDecl = ''
+          } else if ((parser.buffers.sgmlDecl + c).toUpperCase() === DOCTYPE) {
             parser.state = STATE.DOCTYPE
-            if (parser.doctype || parser.sawRoot) {
+            if (parser.buffers.doctype || parser.sawRoot) {
               strictFail(parser,
                 'Inappropriately located doctype declaration')
             }
-            parser.doctype = ''
-            parser.sgmlDecl = ''
+            parser.buffers.doctype = ''
+            parser.buffers.sgmlDecl = ''
           } else if (c === '>') {
-            emitNode(parser, 'onsgmldeclaration', parser.sgmlDecl)
-            parser.sgmlDecl = ''
+            emitNode(parser, 'onsgmldeclaration', parser.buffers.sgmlDecl)
+            parser.buffers.sgmlDecl = ''
             parser.state = STATE.TEXT
           } else if (isQuote(c)) {
             parser.state = STATE.SGML_DECL_QUOTED
-            parser.sgmlDecl += c
+            parser.buffers.sgmlDecl += c
           } else {
-            parser.sgmlDecl += c
+            parser.buffers.sgmlDecl += c
           }
           continue
 
@@ -261,16 +250,16 @@ export class SAXParser {
             parser.state = STATE.SGML_DECL
             parser.q = ''
           }
-          parser.sgmlDecl += c
+          parser.buffers.sgmlDecl += c
           continue
 
         case STATE.DOCTYPE:
           if (c === '>') {
             parser.state = STATE.TEXT
-            emitNode(parser, 'ondoctype', parser.doctype)
-            parser.doctype = true // just remember that we saw it.
+            emitNode(parser, 'ondoctype', parser.buffers.doctype)
+            parser.buffers.doctype = 'true' // just remember that we saw it.
           } else {
-            parser.doctype += c
+            parser.buffers.doctype += c
             if (c === '[') {
               parser.state = STATE.DOCTYPE_DTD
             } else if (isQuote(c)) {
@@ -281,7 +270,7 @@ export class SAXParser {
           continue
 
         case STATE.DOCTYPE_QUOTED:
-          parser.doctype += c
+          parser.buffers.doctype += c
           if (c === parser.q) {
             parser.q = ''
             parser.state = STATE.DOCTYPE
@@ -289,7 +278,7 @@ export class SAXParser {
           continue
 
         case STATE.DOCTYPE_DTD:
-          parser.doctype += c
+          parser.buffers.doctype += c
           if (c === ']') {
             parser.state = STATE.DOCTYPE
           } else if (isQuote(c)) {
@@ -299,7 +288,7 @@ export class SAXParser {
           continue
 
         case STATE.DOCTYPE_DTD_QUOTED:
-          parser.doctype += c
+          parser.buffers.doctype += c
           if (c === parser.q) {
             parser.state = STATE.DOCTYPE_DTD
             parser.q = ''
@@ -310,20 +299,20 @@ export class SAXParser {
           if (c === '-') {
             parser.state = STATE.COMMENT_ENDING
           } else {
-            parser.comment += c
+            parser.buffers.comment += c
           }
           continue
 
         case STATE.COMMENT_ENDING:
           if (c === '-') {
             parser.state = STATE.COMMENT_ENDED
-            parser.comment = textopts(parser.opt, parser.comment)
-            if (parser.comment) {
-              emitNode(parser, 'oncomment', parser.comment)
+            parser.buffers.comment = textopts(parser.opt, parser.buffers.comment)
+            if (parser.buffers.comment) {
+              emitNode(parser, 'oncomment', parser.buffers.comment)
             }
-            parser.comment = ''
+            parser.buffers.comment = ''
           } else {
-            parser.comment += '-' + c
+            parser.buffers.comment += '-' + c
             parser.state = STATE.COMMENT
           }
           continue
@@ -333,7 +322,7 @@ export class SAXParser {
             strictFail(parser, 'Malformed comment')
             // allow <!-- blah -- bloo --> in non-strict mode,
             // which is a comment of " blah -- bloo "
-            parser.comment += '--' + c
+            parser.buffers.comment += '--' + c
             parser.state = STATE.COMMENT
           } else {
             parser.state = STATE.TEXT
@@ -344,7 +333,7 @@ export class SAXParser {
           if (c === ']') {
             parser.state = STATE.CDATA_ENDING
           } else {
-            parser.cdata += c
+            parser.buffers.cdata += c
           }
           continue
 
@@ -352,23 +341,23 @@ export class SAXParser {
           if (c === ']') {
             parser.state = STATE.CDATA_ENDING_2
           } else {
-            parser.cdata += ']' + c
+            parser.buffers.cdata += ']' + c
             parser.state = STATE.CDATA
           }
           continue
 
         case STATE.CDATA_ENDING_2:
           if (c === '>') {
-            if (parser.cdata) {
-              emitNode(parser, 'oncdata', parser.cdata)
+            if (parser.buffers.cdata) {
+              emitNode(parser, 'oncdata', parser.buffers.cdata)
             }
             emitNode(parser, 'onclosecdata')
-            parser.cdata = ''
+            parser.buffers.cdata = ''
             parser.state = STATE.TEXT
           } else if (c === ']') {
-            parser.cdata += ']'
+            parser.buffers.cdata += ']'
           } else {
-            parser.cdata += ']]' + c
+            parser.buffers.cdata += ']]' + c
             parser.state = STATE.CDATA
           }
           continue
@@ -379,37 +368,37 @@ export class SAXParser {
           } else if (isWhitespace(c)) {
             parser.state = STATE.PROC_INST_BODY
           } else {
-            parser.procInstName += c
+            parser.buffers.procInstName += c
           }
           continue
 
         case STATE.PROC_INST_BODY:
-          if (!parser.procInstBody && isWhitespace(c)) {
+          if (!parser.buffers.procInstBody && isWhitespace(c)) {
             continue
           } else if (c === '?') {
             parser.state = STATE.PROC_INST_ENDING
           } else {
-            parser.procInstBody += c
+            parser.buffers.procInstBody += c
           }
           continue
 
         case STATE.PROC_INST_ENDING:
           if (c === '>') {
             emitNode(parser, 'onprocessinginstruction', {
-              name: parser.procInstName,
-              body: parser.procInstBody
+              name: parser.buffers.procInstName,
+              body: parser.buffers.procInstBody
             })
-            parser.procInstName = parser.procInstBody = ''
+            parser.buffers.procInstName = parser.buffers.procInstBody = ''
             parser.state = STATE.TEXT
           } else {
-            parser.procInstBody += '?' + c
+            parser.buffers.procInstBody += '?' + c
             parser.state = STATE.PROC_INST_BODY
           }
           continue
 
         case STATE.OPEN_TAG:
           if (isMatch(nameBody, c)) {
-            parser.tagName += c
+            parser.buffers.tagName += c
           } else {
             newTag(parser)
             if (c === '>') {
@@ -444,8 +433,8 @@ export class SAXParser {
           } else if (c === '/') {
             parser.state = STATE.OPEN_TAG_SLASH
           } else if (isMatch(nameStart, c)) {
-            parser.attribName = c
-            parser.attribValue = ''
+            parser.buffers.attribName = c
+            parser.buffers.attribValue = ''
             parser.state = STATE.ATTRIB_NAME
           } else {
             strictFail(parser, 'Invalid attribute name')
@@ -457,13 +446,13 @@ export class SAXParser {
             parser.state = STATE.ATTRIB_VALUE
           } else if (c === '>') {
             strictFail(parser, 'Attribute without value')
-            parser.attribValue = parser.attribName
+            parser.buffers.attribValue = parser.buffers.attribName
             attrib(parser)
             openTag(parser)
           } else if (isWhitespace(c)) {
             parser.state = STATE.ATTRIB_NAME_SAW_WHITE
           } else if (isMatch(nameBody, c)) {
-            parser.attribName += c
+            parser.buffers.attribName += c
           } else {
             strictFail(parser, 'Invalid attribute name')
           }
@@ -476,17 +465,17 @@ export class SAXParser {
             continue
           } else {
             strictFail(parser, 'Attribute without value')
-            parser.tag.attributes[parser.attribName] = ''
-            parser.attribValue = ''
+            parser.tag.attributes[parser.buffers.attribName] = ''
+            parser.buffers.attribValue = ''
             emitNode(parser, 'onattribute', {
-              name: parser.attribName,
+              name: parser.buffers.attribName,
               value: ''
             })
-            parser.attribName = ''
+            parser.buffers.attribName = ''
             if (c === '>') {
               openTag(parser)
             } else if (isMatch(nameStart, c)) {
-              parser.attribName = c
+              parser.buffers.attribName = c
               parser.state = STATE.ATTRIB_NAME
             } else {
               strictFail(parser, 'Invalid attribute name')
@@ -504,7 +493,7 @@ export class SAXParser {
           } else {
             strictFail(parser, 'Unquoted attribute value')
             parser.state = STATE.ATTRIB_VALUE_UNQUOTED
-            parser.attribValue = c
+            parser.buffers.attribValue = c
           }
           continue
 
@@ -513,7 +502,7 @@ export class SAXParser {
             if (c === '&') {
               parser.state = STATE.ATTRIB_VALUE_ENTITY_Q
             } else {
-              parser.attribValue += c
+              parser.buffers.attribValue += c
             }
             continue
           }
@@ -531,8 +520,8 @@ export class SAXParser {
             parser.state = STATE.OPEN_TAG_SLASH
           } else if (isMatch(nameStart, c)) {
             strictFail(parser, 'No whitespace between attributes')
-            parser.attribName = c
-            parser.attribValue = ''
+            parser.buffers.attribName = c
+            parser.buffers.attribValue = ''
             parser.state = STATE.ATTRIB_NAME
           } else {
             strictFail(parser, 'Invalid attribute name')
@@ -544,7 +533,7 @@ export class SAXParser {
             if (c === '&') {
               parser.state = STATE.ATTRIB_VALUE_ENTITY_U
             } else {
-              parser.attribValue += c
+              parser.buffers.attribValue += c
             }
             continue
           }
@@ -557,18 +546,18 @@ export class SAXParser {
           continue
 
         case STATE.CLOSE_TAG:
-          if (!parser.tagName) {
+          if (!parser.buffers.tagName) {
             if (isWhitespace(c)) {
               continue
             } else if (notMatch(nameStart, c)) {
               strictFail(parser, 'Invalid tagname in closing tag.')
             } else {
-              parser.tagName = c
+              parser.buffers.tagName = c
             }
           } else if (c === '>') {
             closeTag(parser)
           } else if (isMatch(nameBody, c)) {
-            parser.tagName += c
+            parser.buffers.tagName += c
           } else {
             if (!isWhitespace(c)) {
               strictFail(parser, 'Invalid tagname in closing tag')
@@ -591,8 +580,8 @@ export class SAXParser {
         case STATE.TEXT_ENTITY:
         case STATE.ATTRIB_VALUE_ENTITY_Q:
         case STATE.ATTRIB_VALUE_ENTITY_U:
-          let returnState
-          let buffer
+          let returnState = STATE.TEXT
+          let buffer = ''
           switch (parser.state) {
             case STATE.TEXT_ENTITY:
               returnState = STATE.TEXT
@@ -611,15 +600,15 @@ export class SAXParser {
           }
 
           if (c === ';') {
-            parser[buffer] += parseEntity(parser)
-            parser.entity = ''
+            parser.buffers[buffer] += parseEntity(parser)
+            parser.buffers.entity = ''
             parser.state = returnState
-          } else if (isMatch(parser.entity.length ? entityBody : entityStart, c)) {
-            parser.entity += c
+          } else if (isMatch(parser.buffers.entity.length ? entityBody : entityStart, c)) {
+            parser.buffers.entity += c
           } else {
             strictFail(parser, 'Invalid character in entity name')
-            parser[buffer] += '&' + parser.entity + c
-            parser.entity = ''
+            parser.buffers[buffer] += '&' + parser.buffers.entity + c
+            parser.buffers.entity = ''
             parser.state = returnState
           }
 
@@ -668,11 +657,11 @@ export class SAXParser {
 
 }
 
-function checkBufferLength(parser) {
+function checkBufferLength(parser: SAXParser) {
   const maxAllowed = Math.max(MAX_BUFFER_LENGTH, 10)
   let maxActual = 0
   for (let i = 0, l = buffers.length; i < l; i++) {
-    const len = parser[buffers[i]].length
+    const len = parser.buffers[buffers[i]].length
     if (len > maxAllowed) {
       // Text/cdata nodes can get big, and since they're buffered,
       // we can get here under normal conditions.
@@ -684,8 +673,8 @@ function checkBufferLength(parser) {
           break
 
         case 'cdata':
-          emitNode(parser, 'oncdata', parser.cdata)
-          parser.cdata = ''
+          emitNode(parser, 'oncdata', parser.buffers.cdata)
+          parser.buffers.cdata = ''
           break
 
         default:
@@ -699,17 +688,17 @@ function checkBufferLength(parser) {
   parser.bufferCheckPosition = m + parser.position
 }
 
-function clearBuffers(parser) {
+function clearBuffers(parser: SAXParser) {
   for (let i = 0, l = buffers.length; i < l; i++) {
-    parser[buffers[i]] = ''
+    parser.buffers[buffers[i]] = ''
   }
 }
 
-function flushBuffers(parser) {
+function flushBuffers(parser: SAXParser) {
   closeText(parser)
-  if (parser.cdata !== '') {
-    emitNode(parser, 'oncdata', parser.cdata)
-    parser.cdata = ''
+  if (parser.buffers.cdata !== '') {
+    emitNode(parser, 'oncdata', parser.buffers.cdata)
+    parser.buffers.cdata = ''
   }
 }
 
@@ -718,7 +707,7 @@ const streamWraps = EVENTS.filter(function (ev: string) {
   return ev !== 'error' && ev !== 'end'
 })
 
-export function createStream(strict, opt) {
+export function createStream(strict: boolean, opt: SAXOptions) {
   return new SAXStream(strict, opt)
 }
 
@@ -853,23 +842,23 @@ const nameBody = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\
 const entityStart = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
 const entityBody = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/
 
-function isWhitespace(c) {
+function isWhitespace(c: string) {
   return c === ' ' || c === '\n' || c === '\r' || c === '\t'
 }
 
-function isQuote(c) {
+function isQuote(c: string) {
   return c === '"' || c === '\''
 }
 
-function isAttribEnd(c) {
+function isAttribEnd(c: string) {
   return c === '>' || isWhitespace(c)
 }
 
-function isMatch(regex, c) {
+function isMatch(regex: RegExp, c: string) {
   return regex.test(c)
 }
 
-function notMatch(regex, c) {
+function notMatch(regex: RegExp, c: string) {
   return !isMatch(regex, c)
 }
 
@@ -910,7 +899,7 @@ export enum STATE {
   CLOSE_TAG_SAW_WHITE, //    </a   >
 }
 
-export const XML_ENTITIES = {
+export const XML_ENTITIES: { [id: string]: string } = {
   'amp': '&',
   'gt': '>',
   'lt': '<',
@@ -918,7 +907,7 @@ export const XML_ENTITIES = {
   'apos': "'"
 }
 
-export const ENTITIES = {
+export const ENTITIES: { [id: string]: string | number } = {
   'amp': '&',
   'gt': '>',
   'lt': '<',
@@ -1186,14 +1175,14 @@ function emit(parser: SAXParser, event: string, data?: any) {
 }
 
 function emitNode(parser: SAXParser, nodeType: string, data?: any) {
-  if (parser.textNode) closeText(parser)
+  if (parser.buffers.textNode) closeText(parser)
   emit(parser, nodeType, data)
 }
 
 function closeText(parser: SAXParser) {
-  parser.textNode = textopts(parser.opt, parser.textNode)
-  if (parser.textNode) emit(parser, 'ontext', parser.textNode)
-  parser.textNode = ''
+  parser.buffers.textNode = textopts(parser.opt, parser.buffers.textNode)
+  if (parser.buffers.textNode) emit(parser, 'ontext', parser.buffers.textNode)
+  parser.buffers.textNode = ''
 }
 
 function textopts(opt: SAXOptions, text: string) {
@@ -1202,16 +1191,16 @@ function textopts(opt: SAXOptions, text: string) {
   return text
 }
 
-function error(parser: SAXParser, er) {
+function error(parser: SAXParser, message: string) {
   closeText(parser)
   if (parser.trackPosition) {
-    er += '\nLine: ' + parser.line +
+    message += '\nLine: ' + parser.line +
       '\nColumn: ' + parser.column +
       '\nChar: ' + parser.c
   }
-  er = new Error(er)
-  parser.error = er
-  emit(parser, 'onerror', er)
+  const error = new Error(message)
+  parser.error = error
+  emit(parser, 'onerror', error)
   return parser
 }
 
@@ -1241,7 +1230,7 @@ function strictFail(parser: SAXParser, message: string) {
 
 function newTag(parser: SAXParser) {
   const parent = parser.tags[parser.tags.length - 1] || parser
-  const tag = parser.tag = { name: parser.tagName, attributes: {} }
+  const tag = parser.tag = { name: parser.buffers.tagName, attributes: {} }
 
   // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
   if (parser.opt.xmlns) {
@@ -1268,51 +1257,51 @@ function qname(name: string, attribute?: boolean) {
 
 function attrib(parser: SAXParser) {
 
-  if (parser.attribList.indexOf([parser.attribName, parser.attribValue]) !== -1 ||
-    parser.tag.attributes.hasOwnProperty(parser.attribName)) {
-    parser.attribName = parser.attribValue = ''
+  if (parser.attribList.indexOf([parser.buffers.attribName, parser.buffers.attribValue]) !== -1 ||
+    parser.tag.attributes.hasOwnProperty(parser.buffers.attribName)) {
+    parser.buffers.attribName = parser.buffers.attribValue = ''
     return
   }
 
   if (parser.opt.xmlns) {
-    const qn = qname(parser.attribName, true)
+    const qn = qname(parser.buffers.attribName, true)
     const prefix = qn.prefix
     const local = qn.local
 
     if (prefix === 'xmlns') {
       // namespace binding attribute. push the binding into scope
-      if (local === 'xml' && parser.attribValue !== XML_NAMESPACE) {
+      if (local === 'xml' && parser.buffers.attribValue !== XML_NAMESPACE) {
         strictFail(parser,
           'xml: prefix must be bound to ' + XML_NAMESPACE + '\n' +
-          'Actual: ' + parser.attribValue)
-      } else if (local === 'xmlns' && parser.attribValue !== XMLNS_NAMESPACE) {
+          'Actual: ' + parser.buffers.attribValue)
+      } else if (local === 'xmlns' && parser.buffers.attribValue !== XMLNS_NAMESPACE) {
         strictFail(parser,
           'xmlns: prefix must be bound to ' + XMLNS_NAMESPACE + '\n' +
-          'Actual: ' + parser.attribValue)
+          'Actual: ' + parser.buffers.attribValue)
       } else {
         const tag = parser.tag
         const parent = parser.tags[parser.tags.length - 1] || parser
         if (tag.ns === parent.ns) {
           tag.ns = Object.create(parent.ns)
         }
-        tag.ns[local] = parser.attribValue
+        tag.ns[local] = parser.buffers.attribValue
       }
     }
 
     // defer onattribute events until all attributes have been seen
     // so any new bindings can take effect. preserve attribute order
     // so deferred events can be emitted in document order
-    parser.attribList.push([parser.attribName, parser.attribValue])
+    parser.attribList.push([parser.buffers.attribName, parser.buffers.attribValue])
   } else {
     // in non-xmlns mode, we can emit the event right away
-    parser.tag.attributes[parser.attribName] = parser.attribValue
+    parser.tag.attributes[parser.buffers.attribName] = parser.buffers.attribValue
     emitNode(parser, 'onattribute', {
-      name: parser.attribName,
-      value: parser.attribValue
+      name: parser.buffers.attribName,
+      value: parser.buffers.attribValue
     })
   }
 
-  parser.attribName = parser.attribValue = ''
+  parser.buffers.attribName = parser.buffers.attribValue = ''
 }
 
 function openTag(parser: SAXParser, selfClosing?: boolean) {
@@ -1321,14 +1310,14 @@ function openTag(parser: SAXParser, selfClosing?: boolean) {
     const tag = parser.tag
 
     // add namespace info to tag
-    const qn = qname(parser.tagName)
+    const qn = qname(parser.buffers.tagName)
     tag.prefix = qn.prefix
     tag.local = qn.local
     tag.uri = tag.ns[qn.prefix] || ''
 
     if (tag.prefix && !tag.uri) {
       strictFail(parser, 'Unbound namespace prefix: ' +
-        JSON.stringify(parser.tagName))
+        JSON.stringify(parser.buffers.tagName))
       tag.uri = qn.prefix
     }
 
@@ -1383,16 +1372,16 @@ function openTag(parser: SAXParser, selfClosing?: boolean) {
   if (!selfClosing) {
     parser.state = STATE.TEXT
     parser.tag = null
-    parser.tagName = ''
+    parser.buffers.tagName = ''
   }
-  parser.attribName = parser.attribValue = ''
+  parser.buffers.attribName = parser.buffers.attribValue = ''
   parser.attribList.length = 0
 }
 
 function closeTag(parser: SAXParser) {
-  if (!parser.tagName) {
+  if (!parser.buffers.tagName) {
     strictFail(parser, 'Weird empty close tag.')
-    parser.textNode += '</>'
+    parser.buffers.textNode += '</>'
     parser.state = STATE.TEXT
     return
   }
@@ -1400,7 +1389,7 @@ function closeTag(parser: SAXParser) {
   // first make sure that the closing tag actually exists.
   // <a><b></c></b></a> will close everything, otherwise.
   let t = parser.tags.length
-  const tagName = parser.tagName
+  const tagName = parser.buffers.tagName
   const closeTo = tagName
   while (t--) {
     const close = parser.tags[t]
@@ -1414,19 +1403,19 @@ function closeTag(parser: SAXParser) {
 
   // didn't find it.  we already failed for strict, so just abort.
   if (t < 0) {
-    strictFail(parser, 'Unmatched closing tag: ' + parser.tagName)
-    parser.textNode += '</' + parser.tagName + '>'
+    strictFail(parser, 'Unmatched closing tag: ' + parser.buffers.tagName)
+    parser.buffers.textNode += '</' + parser.buffers.tagName + '>'
     parser.state = STATE.TEXT
     return
   }
-  parser.tagName = tagName
+  parser.buffers.tagName = tagName
   let s = parser.tags.length
   while (s-- > t) {
     const tag = parser.tag = parser.tags.pop() as SAXTag
-    parser.tagName = parser.tag.name
-    emitNode(parser, 'onclosetag', parser.tagName)
+    parser.buffers.tagName = parser.tag.name
+    emitNode(parser, 'onclosetag', parser.buffers.tagName)
 
-    const x = {}
+    const x: { [_: string]: string } = {}
     for (let i in tag.ns) {
       x[i] = tag.ns[i]
     }
@@ -1441,15 +1430,15 @@ function closeTag(parser: SAXParser) {
     }
   }
   if (t === 0) parser.closedRoot = true
-  parser.tagName = parser.attribValue = parser.attribName = ''
+  parser.buffers.tagName = parser.buffers.attribValue = parser.buffers.attribName = ''
   parser.attribList.length = 0
   parser.state = STATE.TEXT
 }
 
 function parseEntity(parser: SAXParser) {
-  let entity = parser.entity
+  let entity = parser.buffers.entity
   const entityLC = entity.toLowerCase()
-  let num
+  let num = NaN
   let numStr = ''
 
   if (parser.ENTITIES[entity]) {
@@ -1473,7 +1462,7 @@ function parseEntity(parser: SAXParser) {
   entity = entity.replace(/^0+/, '')
   if (isNaN(num) || numStr.toLowerCase() !== entity) {
     strictFail(parser, 'Invalid character entity')
-    return '&' + parser.entity + ';'
+    return '&' + parser.buffers.entity + ';'
   }
 
   return fromCodePoint(num)
@@ -1487,7 +1476,7 @@ function beginWhiteSpace(parser: SAXParser, c: string) {
     // have to process this as a text node.
     // weird, but happens.
     strictFail(parser, 'Non-whitespace before first tag.')
-    parser.textNode = c
+    parser.buffers.textNode = c
     parser.state = STATE.TEXT
   }
 }
