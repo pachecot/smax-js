@@ -1,5 +1,5 @@
 ; (function (sax) { // wrapper for non-node envs
-  sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
+  sax.parser = function (strict: boolean, opt: SAXOptions) { return new SAXParser(strict, opt) }
   sax.SAXParser = SAXParser
   sax.SAXStream = SAXStream
   sax.createStream = createStream
@@ -15,7 +15,7 @@
   // Set to Infinity to have unlimited buffers.
   sax.MAX_BUFFER_LENGTH = 64 * 1024
 
-  var buffers = [
+  const buffers = [
     'comment', 'sgmlDecl', 'textNode', 'tagName', 'doctype',
     'procInstName', 'procInstBody', 'entity', 'attribName',
     'attribValue', 'cdata'
@@ -41,9 +41,16 @@
     'closenamespace'
   ]
 
-  function SAXParser(strict: boolean, opt) {
+  interface SAXOptions {
+    trim?: boolean;
+    normalize?: boolean;
+    xmlns?: boolean;
+    position?: boolean;
+  }
 
-    var parser = this
+  function SAXParser(strict: boolean, opt: SAXOptions) {
+
+    const parser = this
     clearBuffers(parser)
     parser.q = parser.c = ''
     parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH
@@ -76,24 +83,24 @@
     Object.create = function (o) {
       function F() { }
       F.prototype = o
-      var newf = new F()
+      const newf = new F()
       return newf
     }
   }
 
   if (!Object.keys) {
     Object.keys = function (o) {
-      var a = []
-      for (var i in o) if (o.hasOwnProperty(i)) a.push(i)
+      const a = []
+      for (let i in o) if (o.hasOwnProperty(i)) a.push(i)
       return a
     }
   }
 
   function checkBufferLength(parser) {
-    var maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
-    var maxActual = 0
-    for (var i = 0, l = buffers.length; i < l; i++) {
-      var len = parser[buffers[i]].length
+    const maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
+    let maxActual = 0
+    for (let i = 0, l = buffers.length; i < l; i++) {
+      const len = parser[buffers[i]].length
       if (len > maxAllowed) {
         // Text/cdata nodes can get big, and since they're buffered,
         // we can get here under normal conditions.
@@ -116,12 +123,12 @@
       maxActual = Math.max(maxActual, len)
     }
     // schedule the next check for the earliest possible buffer overrun.
-    var m = sax.MAX_BUFFER_LENGTH - maxActual
+    const m = sax.MAX_BUFFER_LENGTH - maxActual
     parser.bufferCheckPosition = m + parser.position
   }
 
   function clearBuffers(parser) {
-    for (var i = 0, l = buffers.length; i < l; i++) {
+    for (let i = 0, l = buffers.length; i < l; i++) {
       parser[buffers[i]] = ''
     }
   }
@@ -142,14 +149,14 @@
     flush: function () { flushBuffers(this) }
   }
 
-  var Stream
+  let Stream
   try {
     Stream = require('stream').Stream
   } catch (ex) {
     Stream = function () { }
   }
 
-  var streamWraps = sax.EVENTS.filter(function (ev) {
+  const streamWraps = sax.EVENTS.filter(function (ev: string) {
     return ev !== 'error' && ev !== 'end'
   })
 
@@ -157,7 +164,7 @@
     return new SAXStream(strict, opt)
   }
 
-  function SAXStream(strict: boolean, opt) {
+  function SAXStream(strict: boolean, opt: SAXOptions) {
 
     Stream.apply(this)
 
@@ -165,7 +172,7 @@
     this.writable = true
     this.readable = true
 
-    var me = this
+    const me = this
 
     this._parser.onend = function () {
       me.emit('end')
@@ -181,7 +188,7 @@
 
     this._decoder = null
 
-    streamWraps.forEach(function (ev) {
+    streamWraps.forEach(function (ev: string) {
       Object.defineProperty(me, 'on' + ev, {
         get: function () {
           return me._parser['on' + ev]
@@ -206,12 +213,12 @@
     }
   })
 
-  SAXStream.prototype.write = function (data) {
+  SAXStream.prototype.write = function (data: any) {
     if (typeof Buffer === 'function' &&
       typeof Buffer.isBuffer === 'function' &&
       Buffer.isBuffer(data)) {
       if (!this._decoder) {
-        var SD = require('string_decoder').StringDecoder
+        const SD = require('string_decoder').StringDecoder
         this._decoder = new SD('utf8')
       }
       data = this._decoder.write(data)
@@ -230,11 +237,11 @@
     return true
   }
 
-  SAXStream.prototype.on = function (ev, handler) {
-    var me = this
+  SAXStream.prototype.on = function (ev: string, handler) {
+    const me = this
     if (!me._parser['on' + ev] && streamWraps.indexOf(ev) !== -1) {
       me._parser['on' + ev] = function () {
-        var args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments)
+        const args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments)
         args.splice(0, 0, ev)
         me.emit.apply(me, args)
       }
@@ -245,11 +252,11 @@
 
   // this really needs to be replaced with character classes.
   // XML allows all manner of ridiculous numbers and digits.
-  var CDATA = '[CDATA['
-  var DOCTYPE = 'DOCTYPE'
-  var XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace'
-  var XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/'
-  var rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE }
+  const CDATA = '[CDATA['
+  const DOCTYPE = 'DOCTYPE'
+  const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace'
+  const XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/'
+  const rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE }
 
   // http://www.w3.org/TR/REC-xml/#NT-NameStartChar
   // This implementation works on strings, a single character at a time
@@ -257,12 +264,12 @@
   // without a significant breaking change to either this  parser, or the
   // JavaScript language.  Implementation of an emoji-capable xml parser
   // is left as an exercise for the reader.
-  var nameStart = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
+  const nameStart = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
 
-  var nameBody = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/
+  const nameBody = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/
 
-  var entityStart = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
-  var entityBody = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/
+  const entityStart = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
+  const entityBody = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/
 
   function isWhitespace(c) {
     return c === ' ' || c === '\n' || c === '\r' || c === '\t'
@@ -587,22 +594,22 @@
   }
 
   Object.keys(sax.ENTITIES).forEach(function (key) {
-    var e = sax.ENTITIES[key]
-    var s = typeof e === 'number' ? String.fromCharCode(e) : e
+    const e = sax.ENTITIES[key]
+    const s = typeof e === 'number' ? String.fromCharCode(e) : e
     sax.ENTITIES[key] = s
   })
 
-  for (var s in sax.STATE) {
+  for (const s in sax.STATE) {
     sax.STATE[sax.STATE[s]] = s
   }
 
   // shorthand
   let S = sax.STATE
-  function emit(parser, event, data?) {
+  function emit(parser, event: string, data?: any) {
     parser[event] && parser[event](data)
   }
 
-  function emitNode(parser, nodeType, data?) {
+  function emitNode(parser, nodeType: string, data?: any) {
     if (parser.textNode) closeText(parser)
     emit(parser, nodeType, data)
   }
@@ -613,7 +620,7 @@
     parser.textNode = ''
   }
 
-  function textopts(opt, text) {
+  function textopts(opt: SAXOptions, text: string) {
     if (opt.trim) text = text.trim()
     if (opt.normalize) text = text.replace(/\s+/g, ' ')
     return text
@@ -647,7 +654,7 @@
     return parser
   }
 
-  function strictFail(parser, message) {
+  function strictFail(parser, message: string) {
     if (typeof parser !== 'object' || !(parser instanceof SAXParser)) {
       throw new Error('bad call to strictFail')
     }
@@ -657,8 +664,8 @@
   }
 
   function newTag(parser) {
-    var parent = parser.tags[parser.tags.length - 1] || parser
-    var tag = parser.tag = { name: parser.tagName, attributes: {} }
+    const parent = parser.tags[parser.tags.length - 1] || parser
+    const tag = parser.tag = { name: parser.tagName, attributes: {} }
 
     // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
     if (parser.opt.xmlns) {
@@ -668,11 +675,11 @@
     emitNode(parser, 'onopentagstart', tag)
   }
 
-  function qname(name, attribute?) {
-    var i = name.indexOf(':')
-    var qualName = i < 0 ? ['', name] : name.split(':')
-    var prefix = qualName[0]
-    var local = qualName[1]
+  function qname(name: string, attribute?: boolean) {
+    const i = name.indexOf(':')
+    const qualName = i < 0 ? ['', name] : name.split(':')
+    let prefix = qualName[0]
+    let local = qualName[1]
 
     // <x "xmlns"="http://foo">
     if (attribute && name === 'xmlns') {
@@ -684,7 +691,7 @@
   }
 
   function attrib(parser) {
-    
+
     if (parser.attribList.indexOf(parser.attribName) !== -1 ||
       parser.tag.attributes.hasOwnProperty(parser.attribName)) {
       parser.attribName = parser.attribValue = ''
@@ -692,9 +699,9 @@
     }
 
     if (parser.opt.xmlns) {
-      var qn = qname(parser.attribName, true)
-      var prefix = qn.prefix
-      var local = qn.local
+      const qn = qname(parser.attribName, true)
+      const prefix = qn.prefix
+      const local = qn.local
 
       if (prefix === 'xmlns') {
         // namespace binding attribute. push the binding into scope
@@ -707,8 +714,8 @@
             'xmlns: prefix must be bound to ' + XMLNS_NAMESPACE + '\n' +
             'Actual: ' + parser.attribValue)
         } else {
-          var tag = parser.tag
-          var parent = parser.tags[parser.tags.length - 1] || parser
+          const tag = parser.tag
+          const parent = parser.tags[parser.tags.length - 1] || parser
           if (tag.ns === parent.ns) {
             tag.ns = Object.create(parent.ns)
           }
@@ -732,13 +739,13 @@
     parser.attribName = parser.attribValue = ''
   }
 
-  function openTag(parser, selfClosing?) {
+  function openTag(parser, selfClosing?: boolean) {
     if (parser.opt.xmlns) {
       // emit namespace binding events
-      var tag = parser.tag
+      const tag = parser.tag
 
       // add namespace info to tag
-      var qn = qname(parser.tagName)
+      const qn = qname(parser.tagName)
       tag.prefix = qn.prefix
       tag.local = qn.local
       tag.uri = tag.ns[qn.prefix] || ''
@@ -749,7 +756,7 @@
         tag.uri = qn.prefix
       }
 
-      var parent = parser.tags[parser.tags.length - 1] || parser
+      const parent = parser.tags[parser.tags.length - 1] || parser
       if (tag.ns && parent.ns !== tag.ns) {
         Object.keys(tag.ns).forEach(function (p) {
           emitNode(parser, 'onopennamespace', {
@@ -762,15 +769,15 @@
       // handle deferred onattribute events
       // Note: do not apply default ns to attributes:
       //   http://www.w3.org/TR/REC-xml-names/#defaulting
-      for (var i = 0, l = parser.attribList.length; i < l; i++) {
-        var nv = parser.attribList[i]
-        var name = nv[0]
-        var value = nv[1]
-        var qualName = qname(name, true)
-        var prefix = qualName.prefix
-        var local = qualName.local
-        var uri = prefix === '' ? '' : (tag.ns[prefix] || '')
-        var a = {
+      for (let i = 0, l = parser.attribList.length; i < l; i++) {
+        const nv = parser.attribList[i]
+        const name = nv[0]
+        const value = nv[1]
+        const qualName = qname(name, true)
+        const prefix = qualName.prefix
+        const local = qualName.local
+        const uri = prefix === '' ? '' : (tag.ns[prefix] || '')
+        const a = {
           name: name,
           value: value,
           prefix: prefix,
@@ -816,11 +823,11 @@
 
     // first make sure that the closing tag actually exists.
     // <a><b></c></b></a> will close everything, otherwise.
-    var t = parser.tags.length
-    var tagName = parser.tagName
-    var closeTo = tagName
+    let t = parser.tags.length
+    const tagName = parser.tagName
+    const closeTo = tagName
     while (t--) {
-      var close = parser.tags[t]
+      const close = parser.tags[t]
       if (close.name !== closeTo) {
         // fail the first time in strict mode
         strictFail(parser, 'Unexpected close tag')
@@ -837,22 +844,22 @@
       return
     }
     parser.tagName = tagName
-    var s = parser.tags.length
+    let s = parser.tags.length
     while (s-- > t) {
-      var tag = parser.tag = parser.tags.pop()
+      const tag = parser.tag = parser.tags.pop()
       parser.tagName = parser.tag.name
       emitNode(parser, 'onclosetag', parser.tagName)
 
-      var x = {}
-      for (var i in tag.ns) {
+      const x = {}
+      for (let i in tag.ns) {
         x[i] = tag.ns[i]
       }
 
-      var parent = parser.tags[parser.tags.length - 1] || parser
+      const parent = parser.tags[parser.tags.length - 1] || parser
       if (parser.opt.xmlns && tag.ns !== parent.ns) {
         // remove namespace bindings introduced by tag
         Object.keys(tag.ns).forEach(function (p) {
-          var n = tag.ns[p]
+          const n = tag.ns[p]
           emitNode(parser, 'onclosenamespace', { prefix: p, uri: n })
         })
       }
@@ -864,10 +871,10 @@
   }
 
   function parseEntity(parser) {
-    var entity = parser.entity
-    var entityLC = entity.toLowerCase()
-    var num
-    var numStr = ''
+    let entity = parser.entity
+    const entityLC = entity.toLowerCase()
+    let num
+    let numStr = ''
 
     if (parser.ENTITIES[entity]) {
       return parser.ENTITIES[entity]
@@ -896,7 +903,7 @@
     return String.fromCodePoint(num)
   }
 
-  function beginWhiteSpace(parser, c) {
+  function beginWhiteSpace(parser, c: string) {
     if (c === '<') {
       parser.state = S.OPEN_WAKA
       parser.startTagPosition = parser.position
@@ -909,16 +916,16 @@
     }
   }
 
-  function charAt(chunk, i) {
-    var result = ''
+  function charAt(chunk: string, i: number) {
+    let result = ''
     if (i < chunk.length) {
       result = chunk.charAt(i)
     }
     return result
   }
 
-  function write(chunk) {
-    var parser = this
+  function write(chunk: any) {
+    const parser = this
     if (this.error) {
       throw this.error
     }
@@ -932,8 +939,8 @@
     if (typeof chunk === 'object') {
       chunk = chunk.toString()
     }
-    var i = 0
-    var c = ''
+    let i = 0
+    let c = ''
     while (true) {
       c = charAt(chunk, i++)
       parser.c = c
@@ -967,7 +974,7 @@
 
         case S.TEXT:
           if (parser.sawRoot && !parser.closedRoot) {
-            var starti = i - 1
+            const starti = i - 1
             while (c && c !== '<' && c !== '&') {
               c = charAt(chunk, i++)
               if (c && parser.trackPosition) {
@@ -1017,7 +1024,7 @@
             strictFail(parser, 'Unencoded <')
             // if there was some whitespace, then add that in.
             if (parser.startTagPosition + 1 < parser.position) {
-              var pad = parser.position - parser.startTagPosition
+              const pad = parser.position - parser.startTagPosition
               c = new Array(pad).join(' ') + c
             }
             parser.textNode += '<' + c
@@ -1390,8 +1397,8 @@
         case S.TEXT_ENTITY:
         case S.ATTRIB_VALUE_ENTITY_Q:
         case S.ATTRIB_VALUE_ENTITY_U:
-          var returnState
-          var buffer
+          let returnState
+          let buffer
           switch (parser.state) {
             case S.TEXT_ENTITY:
               returnState = S.TEXT
@@ -1439,21 +1446,21 @@
   /* istanbul ignore next */
   if (!String.fromCodePoint) {
     (function () {
-      var stringFromCharCode = String.fromCharCode
-      var floor = Math.floor
-      var fromCodePoint = function () {
-        var MAX_SIZE = 0x4000
-        var codeUnits = []
-        var highSurrogate
-        var lowSurrogate
-        var index = -1
-        var length = arguments.length
+      const stringFromCharCode = String.fromCharCode
+      const floor = Math.floor
+      const fromCodePoint = function () {
+        const MAX_SIZE = 0x4000
+        const codeUnits = []
+        let highSurrogate
+        let lowSurrogate
+        let index = -1
+        const length = arguments.length
         if (!length) {
           return ''
         }
-        var result = ''
+        let result = ''
         while (++index < length) {
-          var codePoint = Number(arguments[index])
+          let codePoint = Number(arguments[index])
           if (
             !isFinite(codePoint) || // `NaN`, `+Infinity`, or `-Infinity`
             codePoint < 0 || // not a valid Unicode code point
