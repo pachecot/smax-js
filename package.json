@@ -23,6 +23,7 @@
   "devDependencies": {
     "@types/node": "^12.0.2",
     "nyc": "^14.1.1",
+    "standard": "^12.0.1",
     "tap": "^14.0.0",
     "typescript": "^3.4.5"
   }
