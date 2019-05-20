@@ -48,9 +48,9 @@ fs.readFile(xmlFile, function (er, d) {
 
     parser.onend = function () {
       var out = util.inspect(products, false, 3, true)
-      res.writeHead(200, {'content-type': 'application/json'})
+      res.writeHead(200, { 'content-type': 'application/json' })
       res.end('{"ok":true}')
-    // res.end(JSON.stringify(products))
+      // res.end(JSON.stringify(products))
     }
 
     parser.write(xmlstr).end()
