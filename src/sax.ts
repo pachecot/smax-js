@@ -52,7 +52,6 @@
     parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH
     parser.opt = opt || {}
     parser.opt.lowercase = parser.opt.lowercase || parser.opt.lowercasetags
-    parser.looseCase = parser.opt.lowercase ? 'toLowerCase' : 'toUpperCase'
     parser.tags = []
     parser.closed = parser.closedRoot = parser.sawRoot = false
     parser.tag = parser.error = null
@@ -665,7 +664,6 @@
   }
 
   function newTag(parser) {
-    if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]()
     var parent = parser.tags[parser.tags.length - 1] || parser
     var tag = parser.tag = { name: parser.tagName, attributes: {} }
 
@@ -693,10 +691,7 @@
   }
 
   function attrib(parser) {
-    if (!parser.strict) {
-      parser.attribName = parser.attribName[parser.looseCase]()
-    }
-
+    
     if (parser.attribList.indexOf(parser.attribName) !== -1 ||
       parser.tag.attributes.hasOwnProperty(parser.attribName)) {
       parser.attribName = parser.attribValue = ''
@@ -830,9 +825,6 @@
     // <a><b></c></b></a> will close everything, otherwise.
     var t = parser.tags.length
     var tagName = parser.tagName
-    if (!parser.strict) {
-      tagName = tagName[parser.looseCase]()
-    }
     var closeTo = tagName
     while (t--) {
       var close = parser.tags[t]
