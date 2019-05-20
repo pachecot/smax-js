@@ -41,7 +41,7 @@
     'closenamespace'
   ]
 
-  function SAXParser(strict, opt) {
+  function SAXParser(strict: boolean, opt) {
     // if (!(this instanceof SAXParser)) {
     //   return new SAXParser(strict, opt)
     // }
@@ -162,7 +162,7 @@
     return new SAXStream(strict, opt)
   }
 
-  function SAXStream(strict, opt) {
+  function SAXStream(strict: boolean, opt) {
     // if (!(this instanceof SAXStream)) {
     //   return new SAXStream(strict, opt)
     // }
