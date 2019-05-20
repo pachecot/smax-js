@@ -1,10 +1,8 @@
 
-const sax = exports
 
-sax.parser = function (strict: boolean, opt: SAXOptions) { return new SAXParser(strict, opt) }
-sax.SAXParser = SAXParser
-sax.SAXStream = SAXStream
-sax.createStream = createStream
+export const parser = function (strict: boolean, opt: SAXOptions) {
+  return new SAXParser(strict, opt)
+}
 
 // When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
 // When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
@@ -15,7 +13,7 @@ sax.createStream = createStream
 // the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
 // edge case, result in creating at most one complete copy of the string passed in.
 // Set to Infinity to have unlimited buffers.
-sax.MAX_BUFFER_LENGTH = 64 * 1024
+export const MAX_BUFFER_LENGTH = 64 * 1024
 
 const buffers = [
   'comment', 'sgmlDecl', 'textNode', 'tagName', 'doctype',
@@ -23,7 +21,7 @@ const buffers = [
   'attribValue', 'cdata'
 ]
 
-sax.EVENTS = [
+export const EVENTS = [
   'text',
   'processinginstruction',
   'sgmldeclaration',
@@ -50,12 +48,12 @@ interface SAXOptions {
   position?: boolean;
 }
 
-function SAXParser(strict: boolean, opt: SAXOptions) {
+export function SAXParser(strict: boolean, opt: SAXOptions) {
 
   const parser = this
   clearBuffers(parser)
   parser.q = parser.c = ''
-  parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH
+  parser.bufferCheckPosition = MAX_BUFFER_LENGTH
   parser.opt = opt || {}
   parser.tags = []
   parser.closed = parser.closedRoot = parser.sawRoot = false
@@ -63,7 +61,7 @@ function SAXParser(strict: boolean, opt: SAXOptions) {
   parser.strict = !!strict
   parser.state = S.BEGIN
   parser.strictEntities = parser.opt.strictEntities
-  parser.ENTITIES = parser.strictEntities ? Object.create(sax.XML_ENTITIES) : Object.create(sax.ENTITIES)
+  parser.ENTITIES = parser.strictEntities ? Object.create(XML_ENTITIES) : Object.create(ENTITIES)
   parser.attribList = []
 
   // namespaces form a prototype chain.
@@ -82,7 +80,7 @@ function SAXParser(strict: boolean, opt: SAXOptions) {
 }
 
 function checkBufferLength(parser) {
-  const maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
+  const maxAllowed = Math.max(MAX_BUFFER_LENGTH, 10)
   let maxActual = 0
   for (let i = 0, l = buffers.length; i < l; i++) {
     const len = parser[buffers[i]].length
@@ -108,7 +106,7 @@ function checkBufferLength(parser) {
     maxActual = Math.max(maxActual, len)
   }
   // schedule the next check for the earliest possible buffer overrun.
-  const m = sax.MAX_BUFFER_LENGTH - maxActual
+  const m = MAX_BUFFER_LENGTH - maxActual
   parser.bufferCheckPosition = m + parser.position
 }
 
@@ -141,15 +139,15 @@ try {
   Stream = function () { }
 }
 
-const streamWraps = sax.EVENTS.filter(function (ev: string) {
+const streamWraps = EVENTS.filter(function (ev: string) {
   return ev !== 'error' && ev !== 'end'
 })
 
-function createStream(strict, opt) {
+export function createStream(strict, opt) {
   return new SAXStream(strict, opt)
 }
 
-function SAXStream(strict: boolean, opt: SAXOptions) {
+export function SAXStream(strict: boolean, opt: SAXOptions) {
 
   Stream.apply(this)
 
@@ -277,7 +275,7 @@ function notMatch(regex, c) {
 }
 
 let SID = 0
-sax.STATE = {
+export const STATE = {
   BEGIN: SID++, // leading byte order mark or whitespace
   BEGIN_WHITESPACE: SID++, // leading whitespace
   TEXT: SID++, // general stuff
@@ -314,7 +312,7 @@ sax.STATE = {
   CLOSE_TAG_SAW_WHITE: SID++ // </a   >
 }
 
-sax.XML_ENTITIES = {
+export const XML_ENTITIES = {
   'amp': '&',
   'gt': '>',
   'lt': '<',
@@ -322,7 +320,7 @@ sax.XML_ENTITIES = {
   'apos': "'"
 }
 
-sax.ENTITIES = {
+export const ENTITIES = {
   'amp': '&',
   'gt': '>',
   'lt': '<',
@@ -578,18 +576,18 @@ sax.ENTITIES = {
   'diams': 9830
 }
 
-Object.keys(sax.ENTITIES).forEach(function (key) {
-  const e = sax.ENTITIES[key]
+Object.keys(ENTITIES).forEach(function (key) {
+  const e = ENTITIES[key]
   const s = typeof e === 'number' ? String.fromCharCode(e) : e
-  sax.ENTITIES[key] = s
+  ENTITIES[key] = s
 })
 
-for (const s in sax.STATE) {
-  sax.STATE[sax.STATE[s]] = s
+for (const s in STATE) {
+  STATE[STATE[s]] = s
 }
 
 // shorthand
-let S = sax.STATE
+let S = STATE
 function emit(parser, event: string, data?: any) {
   parser[event] && parser[event](data)
 }
