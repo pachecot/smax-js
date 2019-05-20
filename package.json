@@ -1,7 +1,7 @@
 {
-  "name": "sax",
-  "description": "An evented streaming XML parser in JavaScript",
-  "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
+  "name": "ssax",
+  "description": "An streaming XML parser in JavaScript",
+  "author": "Tom Pacheco <tomp@netp.org>",
   "version": "1.2.4",
   "main": "lib/sax.js",
   "license": "ISC",
@@ -14,7 +14,7 @@
     "postversion": "npm publish",
     "postpublish": "git push origin --all; git push origin --tags"
   },
-  "repository": "git://github.com/isaacs/sax-js.git",
+  "repository": "git://github.com/pachecot/ssax-js.git",
   "files": [
     "lib/sax.js",
     "LICENSE",
