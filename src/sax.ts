@@ -1433,7 +1433,7 @@
       const floor = Math.floor
       const fromCodePoint = function () {
         const MAX_SIZE = 0x4000
-        const codeUnits = []
+        const codeUnits: number[] = []
         let highSurrogate
         let lowSurrogate
         let index = -1
