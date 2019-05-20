@@ -118,7 +118,523 @@ export class SAXParser {
     end(this)
   }
 
-  write = write
+  write(chunk: any) {
+    const parser = this;
+    if (this.error) {
+      throw this.error
+    }
+    if (parser.closed) {
+      return error(parser,
+        'Cannot write after close. Assign an onready handler.')
+    }
+    if (chunk === null) {
+      return end(parser)
+    }
+    if (typeof chunk === 'object') {
+      chunk = chunk.toString()
+    }
+    let i = 0
+    let c = ''
+    while (true) {
+      c = charAt(chunk, i++)
+      parser.c = c
+
+      if (!c) {
+        break
+      }
+
+      if (parser.trackPosition) {
+        parser.position++
+        if (c === '\n') {
+          parser.line++
+          parser.column = 0
+        } else {
+          parser.column++
+        }
+      }
+
+      switch (parser.state) {
+        case STATE.BEGIN:
+          parser.state = STATE.BEGIN_WHITESPACE
+          if (c === '\uFEFF') {
+            continue
+          }
+          beginWhiteSpace(parser, c)
+          continue
+
+        case STATE.BEGIN_WHITESPACE:
+          beginWhiteSpace(parser, c)
+          continue
+
+        case STATE.TEXT:
+          if (parser.sawRoot && !parser.closedRoot) {
+            const starti = i - 1
+            while (c && c !== '<' && c !== '&') {
+              c = charAt(chunk, i++)
+              if (c && parser.trackPosition) {
+                parser.position++
+                if (c === '\n') {
+                  parser.line++
+                  parser.column = 0
+                } else {
+                  parser.column++
+                }
+              }
+            }
+            parser.textNode += chunk.substring(starti, i - 1)
+          }
+          if (c === '<' && !(parser.sawRoot && parser.closedRoot && !parser.strict)) {
+            parser.state = STATE.OPEN_WAKA
+            parser.startTagPosition = parser.position
+          } else {
+            if (!isWhitespace(c) && (!parser.sawRoot || parser.closedRoot)) {
+              strictFail(parser, 'Text data outside of root node.')
+            }
+            if (c === '&') {
+              parser.state = STATE.TEXT_ENTITY
+            } else {
+              parser.textNode += c
+            }
+          }
+          continue
+
+        case STATE.OPEN_WAKA:
+          // either a /, ?, !, or text is coming next.
+          if (c === '!') {
+            parser.state = STATE.SGML_DECL
+            parser.sgmlDecl = ''
+          } else if (isWhitespace(c)) {
+            // wait for it...
+          } else if (isMatch(nameStart, c)) {
+            parser.state = STATE.OPEN_TAG
+            parser.tagName = c
+          } else if (c === '/') {
+            parser.state = STATE.CLOSE_TAG
+            parser.tagName = ''
+          } else if (c === '?') {
+            parser.state = STATE.PROC_INST
+            parser.procInstName = parser.procInstBody = ''
+          } else {
+            strictFail(parser, 'Unencoded <')
+            // if there was some whitespace, then add that in.
+            if (parser.startTagPosition + 1 < parser.position) {
+              const pad = parser.position - parser.startTagPosition
+              c = new Array(pad).join(' ') + c
+            }
+            parser.textNode += '<' + c
+            parser.state = STATE.TEXT
+          }
+          continue
+
+        case STATE.SGML_DECL:
+          if ((parser.sgmlDecl + c).toUpperCase() === CDATA) {
+            emitNode(parser, 'onopencdata')
+            parser.state = STATE.CDATA
+            parser.sgmlDecl = ''
+            parser.cdata = ''
+          } else if (parser.sgmlDecl + c === '--') {
+            parser.state = STATE.COMMENT
+            parser.comment = ''
+            parser.sgmlDecl = ''
+          } else if ((parser.sgmlDecl + c).toUpperCase() === DOCTYPE) {
+            parser.state = STATE.DOCTYPE
+            if (parser.doctype || parser.sawRoot) {
+              strictFail(parser,
+                'Inappropriately located doctype declaration')
+            }
+            parser.doctype = ''
+            parser.sgmlDecl = ''
+          } else if (c === '>') {
+            emitNode(parser, 'onsgmldeclaration', parser.sgmlDecl)
+            parser.sgmlDecl = ''
+            parser.state = STATE.TEXT
+          } else if (isQuote(c)) {
+            parser.state = STATE.SGML_DECL_QUOTED
+            parser.sgmlDecl += c
+          } else {
+            parser.sgmlDecl += c
+          }
+          continue
+
+        case STATE.SGML_DECL_QUOTED:
+          if (c === parser.q) {
+            parser.state = STATE.SGML_DECL
+            parser.q = ''
+          }
+          parser.sgmlDecl += c
+          continue
+
+        case STATE.DOCTYPE:
+          if (c === '>') {
+            parser.state = STATE.TEXT
+            emitNode(parser, 'ondoctype', parser.doctype)
+            parser.doctype = true // just remember that we saw it.
+          } else {
+            parser.doctype += c
+            if (c === '[') {
+              parser.state = STATE.DOCTYPE_DTD
+            } else if (isQuote(c)) {
+              parser.state = STATE.DOCTYPE_QUOTED
+              parser.q = c
+            }
+          }
+          continue
+
+        case STATE.DOCTYPE_QUOTED:
+          parser.doctype += c
+          if (c === parser.q) {
+            parser.q = ''
+            parser.state = STATE.DOCTYPE
+          }
+          continue
+
+        case STATE.DOCTYPE_DTD:
+          parser.doctype += c
+          if (c === ']') {
+            parser.state = STATE.DOCTYPE
+          } else if (isQuote(c)) {
+            parser.state = STATE.DOCTYPE_DTD_QUOTED
+            parser.q = c
+          }
+          continue
+
+        case STATE.DOCTYPE_DTD_QUOTED:
+          parser.doctype += c
+          if (c === parser.q) {
+            parser.state = STATE.DOCTYPE_DTD
+            parser.q = ''
+          }
+          continue
+
+        case STATE.COMMENT:
+          if (c === '-') {
+            parser.state = STATE.COMMENT_ENDING
+          } else {
+            parser.comment += c
+          }
+          continue
+
+        case STATE.COMMENT_ENDING:
+          if (c === '-') {
+            parser.state = STATE.COMMENT_ENDED
+            parser.comment = textopts(parser.opt, parser.comment)
+            if (parser.comment) {
+              emitNode(parser, 'oncomment', parser.comment)
+            }
+            parser.comment = ''
+          } else {
+            parser.comment += '-' + c
+            parser.state = STATE.COMMENT
+          }
+          continue
+
+        case STATE.COMMENT_ENDED:
+          if (c !== '>') {
+            strictFail(parser, 'Malformed comment')
+            // allow <!-- blah -- bloo --> in non-strict mode,
+            // which is a comment of " blah -- bloo "
+            parser.comment += '--' + c
+            parser.state = STATE.COMMENT
+          } else {
+            parser.state = STATE.TEXT
+          }
+          continue
+
+        case STATE.CDATA:
+          if (c === ']') {
+            parser.state = STATE.CDATA_ENDING
+          } else {
+            parser.cdata += c
+          }
+          continue
+
+        case STATE.CDATA_ENDING:
+          if (c === ']') {
+            parser.state = STATE.CDATA_ENDING_2
+          } else {
+            parser.cdata += ']' + c
+            parser.state = STATE.CDATA
+          }
+          continue
+
+        case STATE.CDATA_ENDING_2:
+          if (c === '>') {
+            if (parser.cdata) {
+              emitNode(parser, 'oncdata', parser.cdata)
+            }
+            emitNode(parser, 'onclosecdata')
+            parser.cdata = ''
+            parser.state = STATE.TEXT
+          } else if (c === ']') {
+            parser.cdata += ']'
+          } else {
+            parser.cdata += ']]' + c
+            parser.state = STATE.CDATA
+          }
+          continue
+
+        case STATE.PROC_INST:
+          if (c === '?') {
+            parser.state = STATE.PROC_INST_ENDING
+          } else if (isWhitespace(c)) {
+            parser.state = STATE.PROC_INST_BODY
+          } else {
+            parser.procInstName += c
+          }
+          continue
+
+        case STATE.PROC_INST_BODY:
+          if (!parser.procInstBody && isWhitespace(c)) {
+            continue
+          } else if (c === '?') {
+            parser.state = STATE.PROC_INST_ENDING
+          } else {
+            parser.procInstBody += c
+          }
+          continue
+
+        case STATE.PROC_INST_ENDING:
+          if (c === '>') {
+            emitNode(parser, 'onprocessinginstruction', {
+              name: parser.procInstName,
+              body: parser.procInstBody
+            })
+            parser.procInstName = parser.procInstBody = ''
+            parser.state = STATE.TEXT
+          } else {
+            parser.procInstBody += '?' + c
+            parser.state = STATE.PROC_INST_BODY
+          }
+          continue
+
+        case STATE.OPEN_TAG:
+          if (isMatch(nameBody, c)) {
+            parser.tagName += c
+          } else {
+            newTag(parser)
+            if (c === '>') {
+              openTag(parser)
+            } else if (c === '/') {
+              parser.state = STATE.OPEN_TAG_SLASH
+            } else {
+              if (!isWhitespace(c)) {
+                strictFail(parser, 'Invalid character in tag name')
+              }
+              parser.state = STATE.ATTRIB
+            }
+          }
+          continue
+
+        case STATE.OPEN_TAG_SLASH:
+          if (c === '>') {
+            openTag(parser, true)
+            closeTag(parser)
+          } else {
+            strictFail(parser, 'Forward-slash in opening tag not followed by >')
+            parser.state = STATE.ATTRIB
+          }
+          continue
+
+        case STATE.ATTRIB:
+          // haven't read the attribute name yet.
+          if (isWhitespace(c)) {
+            continue
+          } else if (c === '>') {
+            openTag(parser)
+          } else if (c === '/') {
+            parser.state = STATE.OPEN_TAG_SLASH
+          } else if (isMatch(nameStart, c)) {
+            parser.attribName = c
+            parser.attribValue = ''
+            parser.state = STATE.ATTRIB_NAME
+          } else {
+            strictFail(parser, 'Invalid attribute name')
+          }
+          continue
+
+        case STATE.ATTRIB_NAME:
+          if (c === '=') {
+            parser.state = STATE.ATTRIB_VALUE
+          } else if (c === '>') {
+            strictFail(parser, 'Attribute without value')
+            parser.attribValue = parser.attribName
+            attrib(parser)
+            openTag(parser)
+          } else if (isWhitespace(c)) {
+            parser.state = STATE.ATTRIB_NAME_SAW_WHITE
+          } else if (isMatch(nameBody, c)) {
+            parser.attribName += c
+          } else {
+            strictFail(parser, 'Invalid attribute name')
+          }
+          continue
+
+        case STATE.ATTRIB_NAME_SAW_WHITE:
+          if (c === '=') {
+            parser.state = STATE.ATTRIB_VALUE
+          } else if (isWhitespace(c)) {
+            continue
+          } else {
+            strictFail(parser, 'Attribute without value')
+            parser.tag.attributes[parser.attribName] = ''
+            parser.attribValue = ''
+            emitNode(parser, 'onattribute', {
+              name: parser.attribName,
+              value: ''
+            })
+            parser.attribName = ''
+            if (c === '>') {
+              openTag(parser)
+            } else if (isMatch(nameStart, c)) {
+              parser.attribName = c
+              parser.state = STATE.ATTRIB_NAME
+            } else {
+              strictFail(parser, 'Invalid attribute name')
+              parser.state = STATE.ATTRIB
+            }
+          }
+          continue
+
+        case STATE.ATTRIB_VALUE:
+          if (isWhitespace(c)) {
+            continue
+          } else if (isQuote(c)) {
+            parser.q = c
+            parser.state = STATE.ATTRIB_VALUE_QUOTED
+          } else {
+            strictFail(parser, 'Unquoted attribute value')
+            parser.state = STATE.ATTRIB_VALUE_UNQUOTED
+            parser.attribValue = c
+          }
+          continue
+
+        case STATE.ATTRIB_VALUE_QUOTED:
+          if (c !== parser.q) {
+            if (c === '&') {
+              parser.state = STATE.ATTRIB_VALUE_ENTITY_Q
+            } else {
+              parser.attribValue += c
+            }
+            continue
+          }
+          attrib(parser)
+          parser.q = ''
+          parser.state = STATE.ATTRIB_VALUE_CLOSED
+          continue
+
+        case STATE.ATTRIB_VALUE_CLOSED:
+          if (isWhitespace(c)) {
+            parser.state = STATE.ATTRIB
+          } else if (c === '>') {
+            openTag(parser)
+          } else if (c === '/') {
+            parser.state = STATE.OPEN_TAG_SLASH
+          } else if (isMatch(nameStart, c)) {
+            strictFail(parser, 'No whitespace between attributes')
+            parser.attribName = c
+            parser.attribValue = ''
+            parser.state = STATE.ATTRIB_NAME
+          } else {
+            strictFail(parser, 'Invalid attribute name')
+          }
+          continue
+
+        case STATE.ATTRIB_VALUE_UNQUOTED:
+          if (!isAttribEnd(c)) {
+            if (c === '&') {
+              parser.state = STATE.ATTRIB_VALUE_ENTITY_U
+            } else {
+              parser.attribValue += c
+            }
+            continue
+          }
+          attrib(parser)
+          if (c === '>') {
+            openTag(parser)
+          } else {
+            parser.state = STATE.ATTRIB
+          }
+          continue
+
+        case STATE.CLOSE_TAG:
+          if (!parser.tagName) {
+            if (isWhitespace(c)) {
+              continue
+            } else if (notMatch(nameStart, c)) {
+              strictFail(parser, 'Invalid tagname in closing tag.')
+            } else {
+              parser.tagName = c
+            }
+          } else if (c === '>') {
+            closeTag(parser)
+          } else if (isMatch(nameBody, c)) {
+            parser.tagName += c
+          } else {
+            if (!isWhitespace(c)) {
+              strictFail(parser, 'Invalid tagname in closing tag')
+            }
+            parser.state = STATE.CLOSE_TAG_SAW_WHITE
+          }
+          continue
+
+        case STATE.CLOSE_TAG_SAW_WHITE:
+          if (isWhitespace(c)) {
+            continue
+          }
+          if (c === '>') {
+            closeTag(parser)
+          } else {
+            strictFail(parser, 'Invalid characters in closing tag')
+          }
+          continue
+
+        case STATE.TEXT_ENTITY:
+        case STATE.ATTRIB_VALUE_ENTITY_Q:
+        case STATE.ATTRIB_VALUE_ENTITY_U:
+          let returnState
+          let buffer
+          switch (parser.state) {
+            case STATE.TEXT_ENTITY:
+              returnState = STATE.TEXT
+              buffer = 'textNode'
+              break
+
+            case STATE.ATTRIB_VALUE_ENTITY_Q:
+              returnState = STATE.ATTRIB_VALUE_QUOTED
+              buffer = 'attribValue'
+              break
+
+            case STATE.ATTRIB_VALUE_ENTITY_U:
+              returnState = STATE.ATTRIB_VALUE_UNQUOTED
+              buffer = 'attribValue'
+              break
+          }
+
+          if (c === ';') {
+            parser[buffer] += parseEntity(parser)
+            parser.entity = ''
+            parser.state = returnState
+          } else if (isMatch(parser.entity.length ? entityBody : entityStart, c)) {
+            parser.entity += c
+          } else {
+            strictFail(parser, 'Invalid character in entity name')
+            parser[buffer] += '&' + parser.entity + c
+            parser.entity = ''
+            parser.state = returnState
+          }
+
+          continue
+
+        default:
+          throw new Error('Unknown state: ' + parser.state)
+      }
+    } // while
+
+    if (parser.position >= parser.bufferCheckPosition) {
+      checkBufferLength(parser)
+    }
+    return parser
+  }
 
   resume() {
     this.error = null;
@@ -984,523 +1500,6 @@ function charAt(chunk: string, i: number) {
   return result
 }
 
-function write(chunk: any) {
-  const parser: SAXParser = this as SAXParser
-  if (this.error) {
-    throw this.error
-  }
-  if (parser.closed) {
-    return error(parser,
-      'Cannot write after close. Assign an onready handler.')
-  }
-  if (chunk === null) {
-    return end(parser)
-  }
-  if (typeof chunk === 'object') {
-    chunk = chunk.toString()
-  }
-  let i = 0
-  let c = ''
-  while (true) {
-    c = charAt(chunk, i++)
-    parser.c = c
-
-    if (!c) {
-      break
-    }
-
-    if (parser.trackPosition) {
-      parser.position++
-      if (c === '\n') {
-        parser.line++
-        parser.column = 0
-      } else {
-        parser.column++
-      }
-    }
-
-    switch (parser.state) {
-      case STATE.BEGIN:
-        parser.state = STATE.BEGIN_WHITESPACE
-        if (c === '\uFEFF') {
-          continue
-        }
-        beginWhiteSpace(parser, c)
-        continue
-
-      case STATE.BEGIN_WHITESPACE:
-        beginWhiteSpace(parser, c)
-        continue
-
-      case STATE.TEXT:
-        if (parser.sawRoot && !parser.closedRoot) {
-          const starti = i - 1
-          while (c && c !== '<' && c !== '&') {
-            c = charAt(chunk, i++)
-            if (c && parser.trackPosition) {
-              parser.position++
-              if (c === '\n') {
-                parser.line++
-                parser.column = 0
-              } else {
-                parser.column++
-              }
-            }
-          }
-          parser.textNode += chunk.substring(starti, i - 1)
-        }
-        if (c === '<' && !(parser.sawRoot && parser.closedRoot && !parser.strict)) {
-          parser.state = STATE.OPEN_WAKA
-          parser.startTagPosition = parser.position
-        } else {
-          if (!isWhitespace(c) && (!parser.sawRoot || parser.closedRoot)) {
-            strictFail(parser, 'Text data outside of root node.')
-          }
-          if (c === '&') {
-            parser.state = STATE.TEXT_ENTITY
-          } else {
-            parser.textNode += c
-          }
-        }
-        continue
-
-      case STATE.OPEN_WAKA:
-        // either a /, ?, !, or text is coming next.
-        if (c === '!') {
-          parser.state = STATE.SGML_DECL
-          parser.sgmlDecl = ''
-        } else if (isWhitespace(c)) {
-          // wait for it...
-        } else if (isMatch(nameStart, c)) {
-          parser.state = STATE.OPEN_TAG
-          parser.tagName = c
-        } else if (c === '/') {
-          parser.state = STATE.CLOSE_TAG
-          parser.tagName = ''
-        } else if (c === '?') {
-          parser.state = STATE.PROC_INST
-          parser.procInstName = parser.procInstBody = ''
-        } else {
-          strictFail(parser, 'Unencoded <')
-          // if there was some whitespace, then add that in.
-          if (parser.startTagPosition + 1 < parser.position) {
-            const pad = parser.position - parser.startTagPosition
-            c = new Array(pad).join(' ') + c
-          }
-          parser.textNode += '<' + c
-          parser.state = STATE.TEXT
-        }
-        continue
-
-      case STATE.SGML_DECL:
-        if ((parser.sgmlDecl + c).toUpperCase() === CDATA) {
-          emitNode(parser, 'onopencdata')
-          parser.state = STATE.CDATA
-          parser.sgmlDecl = ''
-          parser.cdata = ''
-        } else if (parser.sgmlDecl + c === '--') {
-          parser.state = STATE.COMMENT
-          parser.comment = ''
-          parser.sgmlDecl = ''
-        } else if ((parser.sgmlDecl + c).toUpperCase() === DOCTYPE) {
-          parser.state = STATE.DOCTYPE
-          if (parser.doctype || parser.sawRoot) {
-            strictFail(parser,
-              'Inappropriately located doctype declaration')
-          }
-          parser.doctype = ''
-          parser.sgmlDecl = ''
-        } else if (c === '>') {
-          emitNode(parser, 'onsgmldeclaration', parser.sgmlDecl)
-          parser.sgmlDecl = ''
-          parser.state = STATE.TEXT
-        } else if (isQuote(c)) {
-          parser.state = STATE.SGML_DECL_QUOTED
-          parser.sgmlDecl += c
-        } else {
-          parser.sgmlDecl += c
-        }
-        continue
-
-      case STATE.SGML_DECL_QUOTED:
-        if (c === parser.q) {
-          parser.state = STATE.SGML_DECL
-          parser.q = ''
-        }
-        parser.sgmlDecl += c
-        continue
-
-      case STATE.DOCTYPE:
-        if (c === '>') {
-          parser.state = STATE.TEXT
-          emitNode(parser, 'ondoctype', parser.doctype)
-          parser.doctype = true // just remember that we saw it.
-        } else {
-          parser.doctype += c
-          if (c === '[') {
-            parser.state = STATE.DOCTYPE_DTD
-          } else if (isQuote(c)) {
-            parser.state = STATE.DOCTYPE_QUOTED
-            parser.q = c
-          }
-        }
-        continue
-
-      case STATE.DOCTYPE_QUOTED:
-        parser.doctype += c
-        if (c === parser.q) {
-          parser.q = ''
-          parser.state = STATE.DOCTYPE
-        }
-        continue
-
-      case STATE.DOCTYPE_DTD:
-        parser.doctype += c
-        if (c === ']') {
-          parser.state = STATE.DOCTYPE
-        } else if (isQuote(c)) {
-          parser.state = STATE.DOCTYPE_DTD_QUOTED
-          parser.q = c
-        }
-        continue
-
-      case STATE.DOCTYPE_DTD_QUOTED:
-        parser.doctype += c
-        if (c === parser.q) {
-          parser.state = STATE.DOCTYPE_DTD
-          parser.q = ''
-        }
-        continue
-
-      case STATE.COMMENT:
-        if (c === '-') {
-          parser.state = STATE.COMMENT_ENDING
-        } else {
-          parser.comment += c
-        }
-        continue
-
-      case STATE.COMMENT_ENDING:
-        if (c === '-') {
-          parser.state = STATE.COMMENT_ENDED
-          parser.comment = textopts(parser.opt, parser.comment)
-          if (parser.comment) {
-            emitNode(parser, 'oncomment', parser.comment)
-          }
-          parser.comment = ''
-        } else {
-          parser.comment += '-' + c
-          parser.state = STATE.COMMENT
-        }
-        continue
-
-      case STATE.COMMENT_ENDED:
-        if (c !== '>') {
-          strictFail(parser, 'Malformed comment')
-          // allow <!-- blah -- bloo --> in non-strict mode,
-          // which is a comment of " blah -- bloo "
-          parser.comment += '--' + c
-          parser.state = STATE.COMMENT
-        } else {
-          parser.state = STATE.TEXT
-        }
-        continue
-
-      case STATE.CDATA:
-        if (c === ']') {
-          parser.state = STATE.CDATA_ENDING
-        } else {
-          parser.cdata += c
-        }
-        continue
-
-      case STATE.CDATA_ENDING:
-        if (c === ']') {
-          parser.state = STATE.CDATA_ENDING_2
-        } else {
-          parser.cdata += ']' + c
-          parser.state = STATE.CDATA
-        }
-        continue
-
-      case STATE.CDATA_ENDING_2:
-        if (c === '>') {
-          if (parser.cdata) {
-            emitNode(parser, 'oncdata', parser.cdata)
-          }
-          emitNode(parser, 'onclosecdata')
-          parser.cdata = ''
-          parser.state = STATE.TEXT
-        } else if (c === ']') {
-          parser.cdata += ']'
-        } else {
-          parser.cdata += ']]' + c
-          parser.state = STATE.CDATA
-        }
-        continue
-
-      case STATE.PROC_INST:
-        if (c === '?') {
-          parser.state = STATE.PROC_INST_ENDING
-        } else if (isWhitespace(c)) {
-          parser.state = STATE.PROC_INST_BODY
-        } else {
-          parser.procInstName += c
-        }
-        continue
-
-      case STATE.PROC_INST_BODY:
-        if (!parser.procInstBody && isWhitespace(c)) {
-          continue
-        } else if (c === '?') {
-          parser.state = STATE.PROC_INST_ENDING
-        } else {
-          parser.procInstBody += c
-        }
-        continue
-
-      case STATE.PROC_INST_ENDING:
-        if (c === '>') {
-          emitNode(parser, 'onprocessinginstruction', {
-            name: parser.procInstName,
-            body: parser.procInstBody
-          })
-          parser.procInstName = parser.procInstBody = ''
-          parser.state = STATE.TEXT
-        } else {
-          parser.procInstBody += '?' + c
-          parser.state = STATE.PROC_INST_BODY
-        }
-        continue
-
-      case STATE.OPEN_TAG:
-        if (isMatch(nameBody, c)) {
-          parser.tagName += c
-        } else {
-          newTag(parser)
-          if (c === '>') {
-            openTag(parser)
-          } else if (c === '/') {
-            parser.state = STATE.OPEN_TAG_SLASH
-          } else {
-            if (!isWhitespace(c)) {
-              strictFail(parser, 'Invalid character in tag name')
-            }
-            parser.state = STATE.ATTRIB
-          }
-        }
-        continue
-
-      case STATE.OPEN_TAG_SLASH:
-        if (c === '>') {
-          openTag(parser, true)
-          closeTag(parser)
-        } else {
-          strictFail(parser, 'Forward-slash in opening tag not followed by >')
-          parser.state = STATE.ATTRIB
-        }
-        continue
-
-      case STATE.ATTRIB:
-        // haven't read the attribute name yet.
-        if (isWhitespace(c)) {
-          continue
-        } else if (c === '>') {
-          openTag(parser)
-        } else if (c === '/') {
-          parser.state = STATE.OPEN_TAG_SLASH
-        } else if (isMatch(nameStart, c)) {
-          parser.attribName = c
-          parser.attribValue = ''
-          parser.state = STATE.ATTRIB_NAME
-        } else {
-          strictFail(parser, 'Invalid attribute name')
-        }
-        continue
-
-      case STATE.ATTRIB_NAME:
-        if (c === '=') {
-          parser.state = STATE.ATTRIB_VALUE
-        } else if (c === '>') {
-          strictFail(parser, 'Attribute without value')
-          parser.attribValue = parser.attribName
-          attrib(parser)
-          openTag(parser)
-        } else if (isWhitespace(c)) {
-          parser.state = STATE.ATTRIB_NAME_SAW_WHITE
-        } else if (isMatch(nameBody, c)) {
-          parser.attribName += c
-        } else {
-          strictFail(parser, 'Invalid attribute name')
-        }
-        continue
-
-      case STATE.ATTRIB_NAME_SAW_WHITE:
-        if (c === '=') {
-          parser.state = STATE.ATTRIB_VALUE
-        } else if (isWhitespace(c)) {
-          continue
-        } else {
-          strictFail(parser, 'Attribute without value')
-          parser.tag.attributes[parser.attribName] = ''
-          parser.attribValue = ''
-          emitNode(parser, 'onattribute', {
-            name: parser.attribName,
-            value: ''
-          })
-          parser.attribName = ''
-          if (c === '>') {
-            openTag(parser)
-          } else if (isMatch(nameStart, c)) {
-            parser.attribName = c
-            parser.state = STATE.ATTRIB_NAME
-          } else {
-            strictFail(parser, 'Invalid attribute name')
-            parser.state = STATE.ATTRIB
-          }
-        }
-        continue
-
-      case STATE.ATTRIB_VALUE:
-        if (isWhitespace(c)) {
-          continue
-        } else if (isQuote(c)) {
-          parser.q = c
-          parser.state = STATE.ATTRIB_VALUE_QUOTED
-        } else {
-          strictFail(parser, 'Unquoted attribute value')
-          parser.state = STATE.ATTRIB_VALUE_UNQUOTED
-          parser.attribValue = c
-        }
-        continue
-
-      case STATE.ATTRIB_VALUE_QUOTED:
-        if (c !== parser.q) {
-          if (c === '&') {
-            parser.state = STATE.ATTRIB_VALUE_ENTITY_Q
-          } else {
-            parser.attribValue += c
-          }
-          continue
-        }
-        attrib(parser)
-        parser.q = ''
-        parser.state = STATE.ATTRIB_VALUE_CLOSED
-        continue
-
-      case STATE.ATTRIB_VALUE_CLOSED:
-        if (isWhitespace(c)) {
-          parser.state = STATE.ATTRIB
-        } else if (c === '>') {
-          openTag(parser)
-        } else if (c === '/') {
-          parser.state = STATE.OPEN_TAG_SLASH
-        } else if (isMatch(nameStart, c)) {
-          strictFail(parser, 'No whitespace between attributes')
-          parser.attribName = c
-          parser.attribValue = ''
-          parser.state = STATE.ATTRIB_NAME
-        } else {
-          strictFail(parser, 'Invalid attribute name')
-        }
-        continue
-
-      case STATE.ATTRIB_VALUE_UNQUOTED:
-        if (!isAttribEnd(c)) {
-          if (c === '&') {
-            parser.state = STATE.ATTRIB_VALUE_ENTITY_U
-          } else {
-            parser.attribValue += c
-          }
-          continue
-        }
-        attrib(parser)
-        if (c === '>') {
-          openTag(parser)
-        } else {
-          parser.state = STATE.ATTRIB
-        }
-        continue
-
-      case STATE.CLOSE_TAG:
-        if (!parser.tagName) {
-          if (isWhitespace(c)) {
-            continue
-          } else if (notMatch(nameStart, c)) {
-            strictFail(parser, 'Invalid tagname in closing tag.')
-          } else {
-            parser.tagName = c
-          }
-        } else if (c === '>') {
-          closeTag(parser)
-        } else if (isMatch(nameBody, c)) {
-          parser.tagName += c
-        } else {
-          if (!isWhitespace(c)) {
-            strictFail(parser, 'Invalid tagname in closing tag')
-          }
-          parser.state = STATE.CLOSE_TAG_SAW_WHITE
-        }
-        continue
-
-      case STATE.CLOSE_TAG_SAW_WHITE:
-        if (isWhitespace(c)) {
-          continue
-        }
-        if (c === '>') {
-          closeTag(parser)
-        } else {
-          strictFail(parser, 'Invalid characters in closing tag')
-        }
-        continue
-
-      case STATE.TEXT_ENTITY:
-      case STATE.ATTRIB_VALUE_ENTITY_Q:
-      case STATE.ATTRIB_VALUE_ENTITY_U:
-        let returnState
-        let buffer
-        switch (parser.state) {
-          case STATE.TEXT_ENTITY:
-            returnState = STATE.TEXT
-            buffer = 'textNode'
-            break
-
-          case STATE.ATTRIB_VALUE_ENTITY_Q:
-            returnState = STATE.ATTRIB_VALUE_QUOTED
-            buffer = 'attribValue'
-            break
-
-          case STATE.ATTRIB_VALUE_ENTITY_U:
-            returnState = STATE.ATTRIB_VALUE_UNQUOTED
-            buffer = 'attribValue'
-            break
-        }
-
-        if (c === ';') {
-          parser[buffer] += parseEntity(parser)
-          parser.entity = ''
-          parser.state = returnState
-        } else if (isMatch(parser.entity.length ? entityBody : entityStart, c)) {
-          parser.entity += c
-        } else {
-          strictFail(parser, 'Invalid character in entity name')
-          parser[buffer] += '&' + parser.entity + c
-          parser.entity = ''
-          parser.state = returnState
-        }
-
-        continue
-
-      default:
-        throw new Error('Unknown state: ' + parser.state)
-    }
-  } // while
-
-  if (parser.position >= parser.bufferCheckPosition) {
-    checkBufferLength(parser)
-  }
-  return parser
-}
 
 /*! http://mths.be/fromcodepoint v0.1.0 by @mathias */
 /* istanbul ignore next */
