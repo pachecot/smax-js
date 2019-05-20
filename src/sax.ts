@@ -1208,19 +1208,27 @@ function emit(parser: SAXParser, event: string, data?: any) {
 }
 
 function emitNode(parser: SAXParser, nodeType: string, data?: any) {
-  if (parser.buffers.textNode) closeText(parser)
+  if (parser.buffers.textNode) {
+    closeText(parser)
+  }
   emit(parser, nodeType, data)
 }
 
 function closeText(parser: SAXParser) {
   parser.buffers.textNode = textopts(parser.opt, parser.buffers.textNode)
-  if (parser.buffers.textNode) emit(parser, 'ontext', parser.buffers.textNode)
+  if (parser.buffers.textNode) {
+    emit(parser, 'ontext', parser.buffers.textNode)
+  }
   parser.buffers.textNode = ''
 }
 
 function textopts(opt: SAXOptions, text: string) {
-  if (opt.trim) text = text.trim()
-  if (opt.normalize) text = text.replace(/\s+/g, ' ')
+  if (opt.trim) {
+    text = text.trim()
+  }
+  if (opt.normalize) {
+    text = text.replace(/\s+/g, ' ')
+  }
   return text
 }
 
@@ -1238,7 +1246,9 @@ function error(parser: SAXParser, message: string) {
 }
 
 function end(parser: SAXParser) {
-  if (parser.sawRoot && !parser.closedRoot) strictFail(parser, 'Unclosed root tag')
+  if (parser.sawRoot && !parser.closedRoot) {
+    strictFail(parser, 'Unclosed root tag')
+  }
   if ((parser.state !== STATE.BEGIN) &&
     (parser.state !== STATE.BEGIN_WHITESPACE) &&
     (parser.state !== STATE.TEXT)) {
@@ -1462,7 +1472,9 @@ function closeTag(parser: SAXParser) {
       })
     }
   }
-  if (t === 0) parser.closedRoot = true
+  if (t === 0) {
+    parser.closedRoot = true
+  }
   parser.buffers.tagName = parser.buffers.attribValue = parser.buffers.attribName = ''
   parser.attribList.length = 0
   parser.state = STATE.TEXT
