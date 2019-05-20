@@ -2,18 +2,18 @@
 require(__dirname).test({
   xml: '<span class="test" hello="world"></span>',
   expect: [
-    [ 'opentagstart', {
+    ['opentagstart', {
       name: 'span',
       attributes: {}
-    } ],
-    [ 'attribute', { name: 'class', value: 'test' } ],
-    [ 'attribute', { name: 'hello', value: 'world' } ],
-    [ 'opentag', {
+    }],
+    ['attribute', { name: 'class', value: 'test' }],
+    ['attribute', { name: 'hello', value: 'world' }],
+    ['opentag', {
       name: 'span',
       attributes: { class: 'test', hello: 'world' },
       isSelfClosing: false
-    } ],
-    [ 'closetag', 'span' ]
+    }],
+    ['closetag', 'span']
   ],
   strict: false,
   opt: {}
@@ -23,40 +23,40 @@ require(__dirname).test({
 require(__dirname).test({
   xml: '<span class="test" hello="world"></span>',
   expect: [
-    [ 'opentagstart', {
+    ['opentagstart', {
       name: 'span',
       attributes: {}
-    } ],
-    [ 'attribute', { name: 'class', value: 'test' } ],
-    [ 'attribute', { name: 'hello', value: 'world' } ],
-    [ 'opentag', {
+    }],
+    ['attribute', { name: 'class', value: 'test' }],
+    ['attribute', { name: 'hello', value: 'world' }],
+    ['opentag', {
       name: 'span',
       attributes: { class: 'test', hello: 'world' },
       isSelfClosing: false
-    } ],
-    [ 'closetag', 'span' ]
+    }],
+    ['closetag', 'span']
   ],
   strict: false,
-  opt: {lowercase: true}
+  opt: { lowercase: true }
 })
 
 // backward compatibility with old lowercasetags opt
 require(__dirname).test({
   xml: '<span class="test" hello="world"></span>',
   expect: [
-    [ 'opentagstart', {
+    ['opentagstart', {
       name: 'span',
       attributes: {}
-    } ],
-    [ 'attribute', { name: 'class', value: 'test' } ],
-    [ 'attribute', { name: 'hello', value: 'world' } ],
-    [ 'opentag', {
+    }],
+    ['attribute', { name: 'class', value: 'test' }],
+    ['attribute', { name: 'hello', value: 'world' }],
+    ['opentag', {
       name: 'span',
       attributes: { class: 'test', hello: 'world' },
       isSelfClosing: false
-    } ],
-    [ 'closetag', 'span' ]
+    }],
+    ['closetag', 'span']
   ],
   strict: false,
-  opt: {lowercasetags: true}
+  opt: { lowercasetags: true }
 })
