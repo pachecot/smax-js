@@ -2,16 +2,16 @@ require(__dirname).test({
   xml: '<span>Welcome,</span> to monkey land',
   expect: [
     ['opentagstart', {
-      'name': 'SPAN',
+      'name': 'span',
       'attributes': {}
     }],
     ['opentag', {
-      'name': 'SPAN',
+      'name': 'span',
       'attributes': {},
       isSelfClosing: false
     }],
     ['text', 'Welcome,'],
-    ['closetag', 'SPAN'],
+    ['closetag', 'span'],
     ['text', ' to monkey land'],
     ['end'],
     ['ready']

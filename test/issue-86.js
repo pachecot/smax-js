@@ -4,14 +4,14 @@ require(__dirname).test({
     [
       'opentagstart',
       {
-        name: 'ROOT',
+        name: 'root',
         attributes: {}
       }
     ],
     [
       'opentag',
       {
-        name: 'ROOT',
+        name: 'root',
         attributes: {},
         isSelfClosing: false
       }
@@ -22,7 +22,7 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'ROOT'
+      'root'
     ],
     [
       'text',

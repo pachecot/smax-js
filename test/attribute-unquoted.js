@@ -1,31 +1,31 @@
 require(__dirname).test({
   expect: [
-    [ 'opentagstart', { name: 'ROOT', attributes: {}, ns: {} } ],
+    [ 'opentagstart', { name: 'root', attributes: {}, ns: {} } ],
     [ 'attribute', {
-      name: 'LENGTH',
+      name: 'length',
       value: '12345',
       prefix: '',
-      local: 'LENGTH',
+      local: 'length',
       uri: ''
     } ],
     [ 'opentag', {
-      name: 'ROOT',
+      name: 'root',
       attributes: {
-        LENGTH: {
-          name: 'LENGTH',
+        length: {
+          name: 'length',
           value: '12345',
           prefix: '',
-          local: 'LENGTH',
+          local: 'length',
           uri: ''
         }
       },
       ns: {},
       prefix: '',
-      local: 'ROOT',
+      local: 'root',
       uri: '',
       isSelfClosing: false
     } ],
-    [ 'closetag', 'ROOT' ],
+    [ 'closetag', 'root' ],
     [ 'end' ],
     [ 'ready' ]
   ],
