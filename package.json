@@ -6,6 +6,8 @@
   "main": "lib/sax.js",
   "license": "ISC",
   "scripts": {
+    "build": "tsc",
+    "pretest": "tsc",
     "test": "tap test/*.js --cov -j4",
     "posttest": "standard -F test/*.js lib/*.js",
     "preversion": "npm test",
