@@ -292,42 +292,42 @@
     return !isMatch(regex, c)
   }
 
-  var S: any = 0
+  let SID = 0
   sax.STATE = {
-    BEGIN: S++, // leading byte order mark or whitespace
-    BEGIN_WHITESPACE: S++, // leading whitespace
-    TEXT: S++, // general stuff
-    TEXT_ENTITY: S++, // &amp and such.
-    OPEN_WAKA: S++, // <
-    SGML_DECL: S++, // <!BLARG
-    SGML_DECL_QUOTED: S++, // <!BLARG foo "bar
-    DOCTYPE: S++, // <!DOCTYPE
-    DOCTYPE_QUOTED: S++, // <!DOCTYPE "//blah
-    DOCTYPE_DTD: S++, // <!DOCTYPE "//blah" [ ...
-    DOCTYPE_DTD_QUOTED: S++, // <!DOCTYPE "//blah" [ "foo
-    COMMENT_STARTING: S++, // <!-
-    COMMENT: S++, // <!--
-    COMMENT_ENDING: S++, // <!-- blah -
-    COMMENT_ENDED: S++, // <!-- blah --
-    CDATA: S++, // <![CDATA[ something
-    CDATA_ENDING: S++, // ]
-    CDATA_ENDING_2: S++, // ]]
-    PROC_INST: S++, // <?hi
-    PROC_INST_BODY: S++, // <?hi there
-    PROC_INST_ENDING: S++, // <?hi "there" ?
-    OPEN_TAG: S++, // <strong
-    OPEN_TAG_SLASH: S++, // <strong /
-    ATTRIB: S++, // <a
-    ATTRIB_NAME: S++, // <a foo
-    ATTRIB_NAME_SAW_WHITE: S++, // <a foo _
-    ATTRIB_VALUE: S++, // <a foo=
-    ATTRIB_VALUE_QUOTED: S++, // <a foo="bar
-    ATTRIB_VALUE_CLOSED: S++, // <a foo="bar"
-    ATTRIB_VALUE_UNQUOTED: S++, // <a foo=bar
-    ATTRIB_VALUE_ENTITY_Q: S++, // <foo bar="&quot;"
-    ATTRIB_VALUE_ENTITY_U: S++, // <foo bar=&quot
-    CLOSE_TAG: S++, // </a
-    CLOSE_TAG_SAW_WHITE: S++ // </a   >
+    BEGIN: SID++, // leading byte order mark or whitespace
+    BEGIN_WHITESPACE: SID++, // leading whitespace
+    TEXT: SID++, // general stuff
+    TEXT_ENTITY: SID++, // &amp and such.
+    OPEN_WAKA: SID++, // <
+    SGML_DECL: SID++, // <!BLARG
+    SGML_DECL_QUOTED: SID++, // <!BLARG foo "bar
+    DOCTYPE: SID++, // <!DOCTYPE
+    DOCTYPE_QUOTED: SID++, // <!DOCTYPE "//blah
+    DOCTYPE_DTD: SID++, // <!DOCTYPE "//blah" [ ...
+    DOCTYPE_DTD_QUOTED: SID++, // <!DOCTYPE "//blah" [ "foo
+    COMMENT_STARTING: SID++, // <!-
+    COMMENT: SID++, // <!--
+    COMMENT_ENDING: SID++, // <!-- blah -
+    COMMENT_ENDED: SID++, // <!-- blah --
+    CDATA: SID++, // <![CDATA[ something
+    CDATA_ENDING: SID++, // ]
+    CDATA_ENDING_2: SID++, // ]]
+    PROC_INST: SID++, // <?hi
+    PROC_INST_BODY: SID++, // <?hi there
+    PROC_INST_ENDING: SID++, // <?hi "there" ?
+    OPEN_TAG: SID++, // <strong
+    OPEN_TAG_SLASH: SID++, // <strong /
+    ATTRIB: SID++, // <a
+    ATTRIB_NAME: SID++, // <a foo
+    ATTRIB_NAME_SAW_WHITE: SID++, // <a foo _
+    ATTRIB_VALUE: SID++, // <a foo=
+    ATTRIB_VALUE_QUOTED: SID++, // <a foo="bar
+    ATTRIB_VALUE_CLOSED: SID++, // <a foo="bar"
+    ATTRIB_VALUE_UNQUOTED: SID++, // <a foo=bar
+    ATTRIB_VALUE_ENTITY_Q: SID++, // <foo bar="&quot;"
+    ATTRIB_VALUE_ENTITY_U: SID++, // <foo bar=&quot
+    CLOSE_TAG: SID++, // </a
+    CLOSE_TAG_SAW_WHITE: SID++ // </a   >
   }
 
   sax.XML_ENTITIES = {
@@ -605,8 +605,7 @@
   }
 
   // shorthand
-  S = sax.STATE
-
+  let S = sax.STATE
   function emit(parser, event, data?) {
     parser[event] && parser[event](data)
   }
