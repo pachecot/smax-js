@@ -46,37 +46,84 @@ interface SAXOptions {
   normalize?: boolean;
   xmlns?: boolean;
   position?: boolean;
+  strictEntities?: boolean
 }
 
-export function SAXParser(strict: boolean, opt: SAXOptions) {
+interface SAXAttribute {
+  name: string
+  value: string
+}
 
-  const parser = this
-  clearBuffers(parser)
-  parser.q = parser.c = ''
-  parser.bufferCheckPosition = MAX_BUFFER_LENGTH
-  parser.opt = opt || {}
-  parser.tags = []
-  parser.closed = parser.closedRoot = parser.sawRoot = false
-  parser.tag = parser.error = null
-  parser.strict = !!strict
-  parser.state = STATE.BEGIN
-  parser.strictEntities = parser.opt.strictEntities
-  parser.ENTITIES = parser.strictEntities ? Object.create(XML_ENTITIES) : Object.create(ENTITIES)
-  parser.attribList = []
+interface SAXTag {
+  name: string
+  isSelfClosing: boolean;
+  attributes: SAXAttribute[]
+  ns: { [key: string]: string };
+}
 
-  // namespaces form a prototype chain.
-  // it always points at the current tag,
-  // which protos to its parent tag.
-  if (parser.opt.xmlns) {
-    parser.ns = Object.create(rootNS)
+export class SAXParser {
+
+  q = ''
+  c = ''
+  bufferCheckPosition = MAX_BUFFER_LENGTH
+  tags: SAXTag[] = []
+  closed = false
+  closedRoot = false
+  sawRoot = false
+  tag: any = null
+  error: any = null
+  state = STATE.BEGIN
+  strictEntities: boolean
+  ENTITIES: object
+  attribList: [string, string][] = []
+  trackPosition = false
+  position = 0
+  line = 0
+  column = 0
+  startTagPosition: number = 0
+  ns: object | null = null
+
+  attribName: string = ''
+  attribValue: string = ''
+  tagName: string = ''
+  textNode: string = ''
+  entity: string = ''
+
+  constructor(readonly strict: boolean, readonly opt: SAXOptions = {}) {
+    clearBuffers(this)
+    this.strictEntities = !!opt.strictEntities
+    this.ENTITIES = this.strictEntities ? Object.create(XML_ENTITIES) : Object.create(ENTITIES)
+
+    // namespaces form a prototype chain.
+    // it always points at the current tag,
+    // which protos to its parent tag.
+    if (this.opt.xmlns) {
+      this.ns = Object.create(rootNS)
+    }
+
+    // mostly just for error reporting
+    this.trackPosition = opt.position !== false
+    emit(this, 'onready')
   }
 
-  // mostly just for error reporting
-  parser.trackPosition = parser.opt.position !== false
-  if (parser.trackPosition) {
-    parser.position = parser.line = parser.column = 0
+  end() {
+    end(this)
   }
-  emit(parser, 'onready')
+
+  write = write
+
+  resume() {
+    this.error = null;
+    return this
+  }
+
+  close() {
+    return this.write(null)
+  }
+
+  flush() {
+    flushBuffers(this)
+  }
 }
 
 function checkBufferLength(parser) {
@@ -124,13 +171,6 @@ function flushBuffers(parser) {
   }
 }
 
-SAXParser.prototype = {
-  end: function () { end(this) },
-  write: write,
-  resume: function () { this.error = null; return this },
-  close: function () { return this.write(null) },
-  flush: function () { flushBuffers(this) }
-}
 
 let Stream
 try {
@@ -274,7 +314,7 @@ function notMatch(regex, c) {
   return !isMatch(regex, c)
 }
 
-export enum STATE  {
+export enum STATE {
   BEGIN, // leading byte order mark or whitespace
   BEGIN_WHITESPACE, // leading whitespace
   TEXT, // general stuff
@@ -582,7 +622,7 @@ Object.keys(ENTITIES).forEach(function (key) {
 })
 
 // shorthand
-function emit(parser, event: string, data?: any) {
+function emit(parser: SAXParser, event: string, data?: any) {
   parser[event] && parser[event](data)
 }
 
@@ -603,7 +643,7 @@ function textopts(opt: SAXOptions, text: string) {
   return text
 }
 
-function error(parser, er) {
+function error(parser: SAXParser, er) {
   closeText(parser)
   if (parser.trackPosition) {
     er += '\nLine: ' + parser.line +
@@ -616,7 +656,7 @@ function error(parser, er) {
   return parser
 }
 
-function end(parser) {
+function end(parser: SAXParser) {
   if (parser.sawRoot && !parser.closedRoot) strictFail(parser, 'Unclosed root tag')
   if ((parser.state !== STATE.BEGIN) &&
     (parser.state !== STATE.BEGIN_WHITESPACE) &&
@@ -640,7 +680,7 @@ function strictFail(parser, message: string) {
   }
 }
 
-function newTag(parser) {
+function newTag(parser: SAXParser) {
   const parent = parser.tags[parser.tags.length - 1] || parser
   const tag = parser.tag = { name: parser.tagName, attributes: {} }
 
@@ -667,9 +707,9 @@ function qname(name: string, attribute?: boolean) {
   return { prefix: prefix, local: local }
 }
 
-function attrib(parser) {
+function attrib(parser: SAXParser) {
 
-  if (parser.attribList.indexOf(parser.attribName) !== -1 ||
+  if (parser.attribList.indexOf([parser.attribName, parser.attribValue]) !== -1 ||
     parser.tag.attributes.hasOwnProperty(parser.attribName)) {
     parser.attribName = parser.attribValue = ''
     return
@@ -716,7 +756,7 @@ function attrib(parser) {
   parser.attribName = parser.attribValue = ''
 }
 
-function openTag(parser, selfClosing?: boolean) {
+function openTag(parser: SAXParser, selfClosing?: boolean) {
   if (parser.opt.xmlns) {
     // emit namespace binding events
     const tag = parser.tag
@@ -790,7 +830,7 @@ function openTag(parser, selfClosing?: boolean) {
   parser.attribList.length = 0
 }
 
-function closeTag(parser) {
+function closeTag(parser: SAXParser) {
   if (!parser.tagName) {
     strictFail(parser, 'Weird empty close tag.')
     parser.textNode += '</>'
@@ -823,7 +863,7 @@ function closeTag(parser) {
   parser.tagName = tagName
   let s = parser.tags.length
   while (s-- > t) {
-    const tag = parser.tag = parser.tags.pop()
+    const tag = parser.tag = parser.tags.pop() as SAXTag
     parser.tagName = parser.tag.name
     emitNode(parser, 'onclosetag', parser.tagName)
 
@@ -847,7 +887,7 @@ function closeTag(parser) {
   parser.state = STATE.TEXT
 }
 
-function parseEntity(parser) {
+function parseEntity(parser: SAXParser) {
   let entity = parser.entity
   const entityLC = entity.toLowerCase()
   let num
