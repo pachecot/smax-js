@@ -18,7 +18,7 @@
   var buffers = [
     'comment', 'sgmlDecl', 'textNode', 'tagName', 'doctype',
     'procInstName', 'procInstBody', 'entity', 'attribName',
-    'attribValue', 'cdata', 'script'
+    'attribValue', 'cdata'
   ]
 
   sax.EVENTS = [
@@ -37,7 +37,6 @@
     'error',
     'end',
     'ready',
-    'script',
     'opennamespace',
     'closenamespace'
   ]
@@ -58,7 +57,6 @@
     parser.closed = parser.closedRoot = parser.sawRoot = false
     parser.tag = parser.error = null
     parser.strict = !!strict
-    parser.noscript = !!(strict || parser.opt.noscript)
     parser.state = S.BEGIN
     parser.strictEntities = parser.opt.strictEntities
     parser.ENTITIES = parser.strictEntities ? Object.create(sax.XML_ENTITIES) : Object.create(sax.ENTITIES)
@@ -116,11 +114,6 @@
             parser.cdata = ''
             break
 
-          case 'script':
-            emitNode(parser, 'onscript', parser.script)
-            parser.script = ''
-            break
-
           default:
             error(parser, 'Max buffer length exceeded: ' + buffers[i])
         }
@@ -143,10 +136,6 @@
     if (parser.cdata !== '') {
       emitNode(parser, 'oncdata', parser.cdata)
       parser.cdata = ''
-    }
-    if (parser.script !== '') {
-      emitNode(parser, 'onscript', parser.script)
-      parser.script = ''
     }
   }
 
@@ -338,9 +327,7 @@
     ATTRIB_VALUE_ENTITY_Q: S++, // <foo bar="&quot;"
     ATTRIB_VALUE_ENTITY_U: S++, // <foo bar=&quot
     CLOSE_TAG: S++, // </a
-    CLOSE_TAG_SAW_WHITE: S++, // </a   >
-    SCRIPT: S++, // <script> ...
-    SCRIPT_ENDING: S++ // <script> ... <
+    CLOSE_TAG_SAW_WHITE: S++ // </a   >
   }
 
   sax.XML_ENTITIES = {
@@ -824,12 +811,7 @@
     parser.tags.push(parser.tag)
     emitNode(parser, 'onopentag', parser.tag)
     if (!selfClosing) {
-      // special case for <script> in non-strict mode.
-      if (!parser.noscript && parser.tagName.toLowerCase() === 'script') {
-        parser.state = S.SCRIPT
-      } else {
-        parser.state = S.TEXT
-      }
+      parser.state = S.TEXT
       parser.tag = null
       parser.tagName = ''
     }
@@ -843,17 +825,6 @@
       parser.textNode += '</>'
       parser.state = S.TEXT
       return
-    }
-
-    if (parser.script) {
-      if (parser.tagName !== 'script') {
-        parser.script += '</' + parser.tagName + '>'
-        parser.tagName = ''
-        parser.state = S.SCRIPT
-        return
-      }
-      emitNode(parser, 'onscript', parser.script)
-      parser.script = ''
     }
 
     // first make sure that the closing tag actually exists.
@@ -1039,24 +1010,6 @@
             } else {
               parser.textNode += c
             }
-          }
-          continue
-
-        case S.SCRIPT:
-          // only non-strict
-          if (c === '<') {
-            parser.state = S.SCRIPT_ENDING
-          } else {
-            parser.script += c
-          }
-          continue
-
-        case S.SCRIPT_ENDING:
-          if (c === '/') {
-            parser.state = S.CLOSE_TAG
-          } else {
-            parser.script += '<' + c
-            parser.state = S.SCRIPT
           }
           continue
 
@@ -1423,12 +1376,7 @@
             if (isWhitespace(c)) {
               continue
             } else if (notMatch(nameStart, c)) {
-              if (parser.script) {
-                parser.script += '</' + c
-                parser.state = S.SCRIPT
-              } else {
-                strictFail(parser, 'Invalid tagname in closing tag.')
-              }
+              strictFail(parser, 'Invalid tagname in closing tag.')
             } else {
               parser.tagName = c
             }
@@ -1436,10 +1384,6 @@
             closeTag(parser)
           } else if (isMatch(nameBody, c)) {
             parser.tagName += c
-          } else if (parser.script) {
-            parser.script += '</' + parser.tagName
-            parser.tagName = ''
-            parser.state = S.SCRIPT
           } else {
             if (!isWhitespace(c)) {
               strictFail(parser, 'Invalid tagname in closing tag')
