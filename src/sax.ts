@@ -79,23 +79,6 @@
     emit(parser, 'onready')
   }
 
-  if (!Object.create) {
-    Object.create = function (o) {
-      function F() { }
-      F.prototype = o
-      const newf = new F()
-      return newf
-    }
-  }
-
-  if (!Object.keys) {
-    Object.keys = function (o) {
-      const a = []
-      for (let i in o) if (o.hasOwnProperty(i)) a.push(i)
-      return a
-    }
-  }
-
   function checkBufferLength(parser) {
     const maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
     let maxActual = 0
