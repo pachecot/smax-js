@@ -90,6 +90,12 @@ export class SAXParser {
   tagName: string = ''
   textNode: string = ''
   entity: string = ''
+  sgmlDecl = ''
+  procInstName = ''
+  procInstBody = ''
+  cdata = ''
+  comment = ''
+  doctype: boolean | string = ''
 
   constructor(readonly strict: boolean, readonly opt: SAXOptions = {}) {
     clearBuffers(this)
@@ -979,7 +985,7 @@ function charAt(chunk: string, i: number) {
 }
 
 function write(chunk: any) {
-  const parser = this
+  const parser: SAXParser = this as SAXParser
   if (this.error) {
     throw this.error
   }
