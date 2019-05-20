@@ -151,9 +151,8 @@ export class SAXParser {
       chunk = chunk.toString()
     }
     let i = 0
-    let c = ''
     while (true) {
-      c = charAt(chunk, i++)
+      let c = charAt(chunk, i++)
       parser.c = c
 
       if (!c) {
