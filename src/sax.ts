@@ -18,9 +18,17 @@ export const parser = function (strict: boolean, opt: SAXOptions) {
 export const MAX_BUFFER_LENGTH = 64 * 1024
 
 const buffers = [
-  'comment', 'sgmlDecl', 'textNode', 'tagName', 'doctype',
-  'procInstName', 'procInstBody', 'entity', 'attribName',
-  'attribValue', 'cdata'
+  'comment',
+  'sgmlDecl',
+  'textNode',
+  'tagName',
+  'doctype',
+  'procInstName',
+  'procInstBody',
+  'entity',
+  'attribName',
+  'attribValue',
+  'cdata'
 ]
 
 export const EVENTS = [
