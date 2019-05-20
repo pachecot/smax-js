@@ -1,4 +1,4 @@
-;(function (sax) { // wrapper for non-node envs
+; (function (sax) { // wrapper for non-node envs
   sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
   sax.SAXParser = SAXParser
   sax.SAXStream = SAXStream
@@ -42,10 +42,10 @@
     'closenamespace'
   ]
 
-  function SAXParser (strict, opt) {
-    if (!(this instanceof SAXParser)) {
-      return new SAXParser(strict, opt)
-    }
+  function SAXParser(strict, opt) {
+    // if (!(this instanceof SAXParser)) {
+    //   return new SAXParser(strict, opt)
+    // }
 
     var parser = this
     clearBuffers(parser)
@@ -81,7 +81,7 @@
 
   if (!Object.create) {
     Object.create = function (o) {
-      function F () {}
+      function F() { }
       F.prototype = o
       var newf = new F()
       return newf
@@ -96,7 +96,7 @@
     }
   }
 
-  function checkBufferLength (parser) {
+  function checkBufferLength(parser) {
     var maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
     var maxActual = 0
     for (var i = 0, l = buffers.length; i < l; i++) {
@@ -132,13 +132,13 @@
     parser.bufferCheckPosition = m + parser.position
   }
 
-  function clearBuffers (parser) {
+  function clearBuffers(parser) {
     for (var i = 0, l = buffers.length; i < l; i++) {
       parser[buffers[i]] = ''
     }
   }
 
-  function flushBuffers (parser) {
+  function flushBuffers(parser) {
     closeText(parser)
     if (parser.cdata !== '') {
       emitNode(parser, 'oncdata', parser.cdata)
@@ -162,21 +162,21 @@
   try {
     Stream = require('stream').Stream
   } catch (ex) {
-    Stream = function () {}
+    Stream = function () { }
   }
 
   var streamWraps = sax.EVENTS.filter(function (ev) {
     return ev !== 'error' && ev !== 'end'
   })
 
-  function createStream (strict, opt) {
+  function createStream(strict, opt) {
     return new SAXStream(strict, opt)
   }
 
-  function SAXStream (strict, opt) {
-    if (!(this instanceof SAXStream)) {
-      return new SAXStream(strict, opt)
-    }
+  function SAXStream(strict, opt) {
+    // if (!(this instanceof SAXStream)) {
+    //   return new SAXStream(strict, opt)
+    // }
 
     Stream.apply(this)
 
@@ -283,27 +283,27 @@
   var entityStart = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
   var entityBody = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/
 
-  function isWhitespace (c) {
+  function isWhitespace(c) {
     return c === ' ' || c === '\n' || c === '\r' || c === '\t'
   }
 
-  function isQuote (c) {
+  function isQuote(c) {
     return c === '"' || c === '\''
   }
 
-  function isAttribEnd (c) {
+  function isAttribEnd(c) {
     return c === '>' || isWhitespace(c)
   }
 
-  function isMatch (regex, c) {
+  function isMatch(regex, c) {
     return regex.test(c)
   }
 
-  function notMatch (regex, c) {
+  function notMatch(regex, c) {
     return !isMatch(regex, c)
   }
 
-  var S = 0
+  var S: any = 0
   sax.STATE = {
     BEGIN: S++, // leading byte order mark or whitespace
     BEGIN_WHITESPACE: S++, // leading whitespace
@@ -620,28 +620,28 @@
   // shorthand
   S = sax.STATE
 
-  function emit (parser, event, data) {
+  function emit(parser, event, data?) {
     parser[event] && parser[event](data)
   }
 
-  function emitNode (parser, nodeType, data) {
+  function emitNode(parser, nodeType, data?) {
     if (parser.textNode) closeText(parser)
     emit(parser, nodeType, data)
   }
 
-  function closeText (parser) {
+  function closeText(parser) {
     parser.textNode = textopts(parser.opt, parser.textNode)
     if (parser.textNode) emit(parser, 'ontext', parser.textNode)
     parser.textNode = ''
   }
 
-  function textopts (opt, text) {
+  function textopts(opt, text) {
     if (opt.trim) text = text.trim()
     if (opt.normalize) text = text.replace(/\s+/g, ' ')
     return text
   }
 
-  function error (parser, er) {
+  function error(parser, er) {
     closeText(parser)
     if (parser.trackPosition) {
       er += '\nLine: ' + parser.line +
@@ -654,7 +654,7 @@
     return parser
   }
 
-  function end (parser) {
+  function end(parser) {
     if (parser.sawRoot && !parser.closedRoot) strictFail(parser, 'Unclosed root tag')
     if ((parser.state !== S.BEGIN) &&
       (parser.state !== S.BEGIN_WHITESPACE) &&
@@ -669,31 +669,31 @@
     return parser
   }
 
-  function strictFail (parser, message) {
+  function strictFail(parser, message) {
     if (typeof parser !== 'object' || !(parser instanceof SAXParser)) {
       throw new Error('bad call to strictFail')
     }
-    if (parser.strict) {
+    if ((parser as any).strict) {
       error(parser, message)
     }
   }
 
-  function newTag (parser) {
+  function newTag(parser) {
     if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]()
     var parent = parser.tags[parser.tags.length - 1] || parser
     var tag = parser.tag = { name: parser.tagName, attributes: {} }
 
     // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
     if (parser.opt.xmlns) {
-      tag.ns = parent.ns
+      (tag as any).ns = parent.ns
     }
     parser.attribList.length = 0
     emitNode(parser, 'onopentagstart', tag)
   }
 
-  function qname (name, attribute) {
+  function qname(name, attribute?) {
     var i = name.indexOf(':')
-    var qualName = i < 0 ? [ '', name ] : name.split(':')
+    var qualName = i < 0 ? ['', name] : name.split(':')
     var prefix = qualName[0]
     var local = qualName[1]
 
@@ -706,7 +706,7 @@
     return { prefix: prefix, local: local }
   }
 
-  function attrib (parser) {
+  function attrib(parser) {
     if (!parser.strict) {
       parser.attribName = parser.attribName[parser.looseCase]()
     }
@@ -758,7 +758,7 @@
     parser.attribName = parser.attribValue = ''
   }
 
-  function openTag (parser, selfClosing) {
+  function openTag(parser, selfClosing?) {
     if (parser.opt.xmlns) {
       // emit namespace binding events
       var tag = parser.tag
@@ -837,7 +837,7 @@
     parser.attribList.length = 0
   }
 
-  function closeTag (parser) {
+  function closeTag(parser) {
     if (!parser.tagName) {
       strictFail(parser, 'Weird empty close tag.')
       parser.textNode += '</>'
@@ -908,7 +908,7 @@
     parser.state = S.TEXT
   }
 
-  function parseEntity (parser) {
+  function parseEntity(parser) {
     var entity = parser.entity
     var entityLC = entity.toLowerCase()
     var num
@@ -941,7 +941,7 @@
     return String.fromCodePoint(num)
   }
 
-  function beginWhiteSpace (parser, c) {
+  function beginWhiteSpace(parser, c) {
     if (c === '<') {
       parser.state = S.OPEN_WAKA
       parser.startTagPosition = parser.position
@@ -954,7 +954,7 @@
     }
   }
 
-  function charAt (chunk, i) {
+  function charAt(chunk, i) {
     var result = ''
     if (i < chunk.length) {
       result = chunk.charAt(i)
@@ -962,7 +962,7 @@
     return result
   }
 
-  function write (chunk) {
+  function write(chunk) {
     var parser = this
     if (this.error) {
       throw this.error
@@ -1497,7 +1497,7 @@
           continue
 
         default:
-          throw new Error(parser, 'Unknown state: ' + parser.state)
+          throw new Error('Unknown state: ' + parser.state)
       }
     } // while
 
