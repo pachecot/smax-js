@@ -1,6 +1,6 @@
-# sax js
+# ssax js
 
-A sax-style parser for XML and HTML.
+A sax-style parser for XML.
 
 Designed with [node](http://nodejs.org/) in mind, but should work fine in
 the browser or other CommonJS implementations.
