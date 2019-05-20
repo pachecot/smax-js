@@ -124,6 +124,24 @@ export class SAXParser {
   flush() {
     flushBuffers(this)
   }
+
+  // Events
+  onready?: () => void;
+  onprocessinginstruction?: (node: { name: string; body: string }) => void;
+  ondoctype?: (doctype: string) => void;
+  oncomment?: (comment: string) => void;
+  onopennamespace?: (ns: { prefix: string; uri: string }) => void;
+  onclosenamespace?: (ns: { prefix: string; uri: string }) => void;
+  ontext?: (t: string) => void;
+  onopentag?: (tag: SAXTag) => void;
+  onclosetag?: (tagName: string) => void;
+  oncdata?: (cdata: string) => void;
+  onopencdata?: () => void;
+  onclosecdata?: () => void;
+  onattribute?: (attr: { name: string; value: string }) => void;
+  onend?: () => void;
+  onerror?: (e: Error) => void;
+
 }
 
 function checkBufferLength(parser) {
@@ -626,12 +644,12 @@ function emit(parser: SAXParser, event: string, data?: any) {
   parser[event] && parser[event](data)
 }
 
-function emitNode(parser, nodeType: string, data?: any) {
+function emitNode(parser: SAXParser, nodeType: string, data?: any) {
   if (parser.textNode) closeText(parser)
   emit(parser, nodeType, data)
 }
 
-function closeText(parser) {
+function closeText(parser: SAXParser) {
   parser.textNode = textopts(parser.opt, parser.textNode)
   if (parser.textNode) emit(parser, 'ontext', parser.textNode)
   parser.textNode = ''
@@ -671,7 +689,7 @@ function end(parser: SAXParser) {
   return parser
 }
 
-function strictFail(parser, message: string) {
+function strictFail(parser: SAXParser, message: string) {
   if (typeof parser !== 'object' || !(parser instanceof SAXParser)) {
     throw new Error('bad call to strictFail')
   }
@@ -920,7 +938,7 @@ function parseEntity(parser: SAXParser) {
   return String.fromCodePoint(num)
 }
 
-function beginWhiteSpace(parser, c: string) {
+function beginWhiteSpace(parser: SAXParser, c: string) {
   if (c === '<') {
     parser.state = STATE.OPEN_WAKA
     parser.startTagPosition = parser.position
