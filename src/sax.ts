@@ -51,6 +51,17 @@ export const EVENTS = [
   'closenamespace'
 ]
 
+interface QualifiedName {
+  name: string;
+  prefix: string;
+  local: string;
+  uri: string;
+}
+
+interface QualifiedAttribute extends QualifiedName {
+  value: string;
+}
+
 interface SAXOptions {
   trim?: boolean;
   normalize?: boolean;
@@ -59,17 +70,26 @@ interface SAXOptions {
   strictEntities?: boolean
 }
 
-interface SAXAttribute {
-  name: string
-  value: string
+type Attribute = string
+type Attributes = { [key: string]: Attribute }
+type QualifiedAttributes = { [key: string]: QualifiedAttribute }
+type Namespace = { [key: string]: string }
+
+interface BaseTag {
+  name: string;
+  isSelfClosing: boolean;
+}
+// Interface used when the xmlns option is set
+interface QualifiedTag extends QualifiedName, BaseTag {
+  ns: Namespace;
+  attributes: QualifiedAttributes;
 }
 
-interface SAXTag {
-  name: string
-  isSelfClosing: boolean;
-  attributes: SAXAttribute[]
-  ns: { [key: string]: string };
+interface Tag extends BaseTag {
+  attributes: Attributes
 }
+
+type SAXTag = Tag | QualifiedTag
 
 export class SAXParser {
 
@@ -1247,7 +1267,7 @@ function newTag(parser: SAXParser) {
 
   // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
   if (parser.opt.xmlns) {
-    (tag as any).ns = parent.ns
+    (tag as QualifiedTag).ns = (parent as QualifiedTag).ns
   }
   parser.attribList.length = 0
   emitNode(parser, 'onopentagstart', tag)
@@ -1294,8 +1314,8 @@ function attrib(parser: SAXParser) {
       } else {
         const tag = parser.tag
         const parent = parser.tags[parser.tags.length - 1] || parser
-        if (tag.ns === parent.ns) {
-          tag.ns = Object.create(parent.ns)
+        if (tag.ns === (parent as QualifiedTag).ns) {
+          tag.ns = Object.create((parent as QualifiedTag).ns)
         }
         tag.ns[local] = parser.buffers.attribValue
       }
@@ -1335,7 +1355,7 @@ function openTag(parser: SAXParser, selfClosing?: boolean) {
     }
 
     const parent = parser.tags[parser.tags.length - 1] || parser
-    if (tag.ns && parent.ns !== tag.ns) {
+    if (tag.ns && (parent as QualifiedTag).ns !== tag.ns) {
       Object.keys(tag.ns).forEach(function (p) {
         emitNode(parser, 'onopennamespace', {
           prefix: p,
@@ -1429,15 +1449,15 @@ function closeTag(parser: SAXParser) {
     emitNode(parser, 'onclosetag', parser.buffers.tagName)
 
     const x: { [_: string]: string } = {}
-    for (let i in tag.ns) {
-      x[i] = tag.ns[i]
+    for (let i in (tag as QualifiedTag).ns) {
+      x[i] = (tag as QualifiedTag).ns[i]
     }
 
     const parent = parser.tags[parser.tags.length - 1] || parser
-    if (parser.opt.xmlns && tag.ns !== parent.ns) {
+    if (parser.opt.xmlns && (tag as QualifiedTag).ns !== (parent as QualifiedTag).ns) {
       // remove namespace bindings introduced by tag
-      Object.keys(tag.ns).forEach(function (p) {
-        const n = tag.ns[p]
+      Object.keys((tag as QualifiedTag).ns).forEach(function (p) {
+        const n = (tag as QualifiedTag).ns[p]
         emitNode(parser, 'onclosenamespace', { prefix: p, uri: n })
       })
     }
