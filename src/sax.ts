@@ -91,33 +91,7 @@ interface Tag extends BaseTag {
 
 type SAXTag = Tag | QualifiedTag
 
-interface ParserContext {
-  q: string
-  c: string
-  tags: SAXTag[]
-  closed: boolean
-  buffers: { [name: string]: string }
-  closedRoot: boolean
-  sawRoot: boolean
-  tag: SAXTag | null
-  error: any
-  state: STATE
-  bufferCheckPosition: number
-  strictEntities: boolean
-  ENTITIES: { [name: string]: string }
-  attribList: [string, string][]
-  trackPosition: boolean
-  position: number
-  line: number
-  column: number
-  startTagPosition: number
-  ns: Namespace | null
-
-}
-
-
-export class SAXParser implements ParserContext {
-
+class ParserContext {
   q = ''
   c = ''
   bufferCheckPosition = MAX_BUFFER_LENGTH
@@ -129,8 +103,8 @@ export class SAXParser implements ParserContext {
   tag: SAXTag | null = null
   error: Error | null = null
   state = STATE.BEGIN
-  strictEntities: boolean
-  ENTITIES: { [name: string]: string }
+  strictEntities: boolean = false
+  ENTITIES: { [name: string]: string } = {}
   attribList: [string, string][] = []
   trackPosition = false
   position = 0
@@ -139,10 +113,16 @@ export class SAXParser implements ParserContext {
   startTagPosition: number = 0
   ns: Namespace | null = null
 
-  constructor(readonly strict: boolean, readonly opt: SAXOptions = {}) {
-    clearBuffers(this)
+
+  constructor(readonly opt: SAXOptions) {
+
     this.strictEntities = !!opt.strictEntities
     this.ENTITIES = this.strictEntities ? Object.create(XML_ENTITIES) : Object.create(ENTITIES)
+
+    clearBuffers(this)
+
+    // mostly just for error reporting
+    this.trackPosition = opt.position !== false
 
     // namespaces form a prototype chain.
     // it always points at the current tag,
@@ -150,9 +130,16 @@ export class SAXParser implements ParserContext {
     if (this.opt.xmlns) {
       this.ns = Object.create(rootNS)
     }
+  }
+}
 
-    // mostly just for error reporting
-    this.trackPosition = opt.position !== false
+
+export class SAXParser extends ParserContext {
+
+
+  constructor(readonly strict: boolean, readonly opt: SAXOptions = {}) {
+    super(opt)
+
     emit(this, 'onready')
   }
 
@@ -743,7 +730,7 @@ function checkBufferLength(parser: SAXParser) {
   parser.bufferCheckPosition = m + parser.position
 }
 
-function clearBuffers(parser: SAXParser) {
+function clearBuffers(parser: ParserContext) {
   for (let i = 0, l = buffers.length; i < l; i++) {
     parser.buffers[buffers[i]] = ''
   }
