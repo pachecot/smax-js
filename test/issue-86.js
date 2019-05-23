@@ -5,7 +5,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'root',
-        attributes: {},
+        attributes: [],
         isSelfClosing: false
       }
     ],
@@ -33,7 +33,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'root',
-        attributes: {},
+        attributes: [],
         isSelfClosing: false
       }
     ],

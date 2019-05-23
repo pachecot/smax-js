@@ -17,7 +17,7 @@ require(__dirname).test({
         prefix: '',
         local: 'root',
         uri: '',
-        attributes: {},
+        attributes: [],
         ns: {},
         isSelfClosing: false
       }
@@ -29,15 +29,15 @@ require(__dirname).test({
         prefix: '',
         local: 'plain',
         uri: '',
-        attributes: {
-          'attr': {
+        attributes: [
+          {
             name: 'attr',
             value: 'normal',
             prefix: '',
             local: 'attr',
             uri: ''
           }
-        },
+        ],
         ns: {},
         isSelfClosing: true
       }
@@ -60,15 +60,15 @@ require(__dirname).test({
         prefix: '',
         local: 'ns1',
         uri: 'uri:default',
-        attributes: {
-          'xmlns': {
+        attributes: [
+          {
             name: 'xmlns',
             value: 'uri:default',
             prefix: 'xmlns',
             local: '',
             uri: 'http://www.w3.org/2000/xmlns/'
           }
-        },
+        ],
         ns: {
           '': 'uri:default'
         },
@@ -85,15 +85,15 @@ require(__dirname).test({
         ns: {
           '': 'uri:default'
         },
-        attributes: {
-          'attr': {
+        attributes: [
+          {
             name: 'attr',
             value: 'normal',
             prefix: '',
             local: 'attr',
             uri: ''
           }
-        },
+        ],
         isSelfClosing: true
       }
     ],
@@ -126,15 +126,15 @@ require(__dirname).test({
         prefix: '',
         local: 'ns2',
         uri: '',
-        attributes: {
-          'xmlns:a': {
+        attributes: [
+          {
             name: 'xmlns:a',
             value: 'uri:nsa',
             prefix: 'xmlns',
             local: 'a',
             uri: 'http://www.w3.org/2000/xmlns/'
           }
-        },
+        ],
         ns: {
           a: 'uri:nsa'
         },
@@ -148,15 +148,15 @@ require(__dirname).test({
         prefix: '',
         local: 'plain',
         uri: '',
-        attributes: {
-          'attr': {
+        attributes: [
+          {
             name: 'attr',
             value: 'normal',
             prefix: '',
             local: 'attr',
             uri: ''
           }
-        },
+        ],
         ns: {
           a: 'uri:nsa'
         },
@@ -174,15 +174,15 @@ require(__dirname).test({
         prefix: 'a',
         local: 'ns',
         uri: 'uri:nsa',
-        attributes: {
-          'a:attr': {
+        attributes: [
+          {
             name: 'a:attr',
             value: 'namespaced',
             prefix: 'a',
             local: 'attr',
             uri: 'uri:nsa'
           }
-        },
+        ],
         ns: { a: 'uri:nsa' },
         isSelfClosing: true
       }

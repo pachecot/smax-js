@@ -13,15 +13,15 @@ require(__dirname).test({
         uri: '',
         prefix: '',
         local: 'root',
-        attributes: {
-          'unbound:attr': {
+        attributes: [
+          {
             name: 'unbound:attr',
             value: 'value',
             uri: 'unbound',
             prefix: 'unbound',
             local: 'attr'
           }
-        },
+        ],
         ns: {},
         isSelfClosing: true
       }

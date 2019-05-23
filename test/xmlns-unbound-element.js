@@ -13,7 +13,7 @@ require(__dirname).test({
         uri: 'unbound',
         prefix: 'unbound',
         local: 'root',
-        attributes: {},
+        attributes: [],
         ns: {},
         isSelfClosing: true
       }
@@ -45,15 +45,15 @@ require(__dirname).test({
         uri: 'someuri',
         prefix: 'unbound',
         local: 'root',
-        attributes: {
-          'xmlns:unbound': {
+        attributes: [
+          {
             name: 'xmlns:unbound',
             value: 'someuri',
             prefix: 'xmlns',
             local: 'unbound',
             uri: 'http://www.w3.org/2000/xmlns/'
           }
-        },
+        ],
         ns: {
           'unbound': 'someuri'
         },

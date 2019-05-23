@@ -82,7 +82,7 @@ export function setMaxBufferLength(length: number) {
 }
 
 const NULL_TAG: Tag = {
-  attributes: {},
+  attributes: [],
   name: '',
   isSelfClosing: true
 }
@@ -605,7 +605,7 @@ function write(context: XmlParser, chunk?: string) {
           continue
         } else {
           strictFail(context, 'Attribute without value')
-          context.tag.attributes[context.attribName] = ''
+          context.attribList.push([context.attribName, ''])
           context.attribValue = ''
           context.attribName = ''
           if (c === '>') {
@@ -802,7 +802,7 @@ function strictFail(context: XmlParser, message: string) {
 }
 
 function newTag(context: XmlParser) {
-  const tag = context.tag = { name: context.tagName, attributes: {} } as QualifiedTag
+  const tag = context.tag = { name: context.tagName, attributes: [] as QualifiedAttribute[] } as QualifiedTag
 
   // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
   if (context.xmlns) {
@@ -828,11 +828,8 @@ function qname(name: string, attribute?: boolean) {
 }
 
 function attrib(context: XmlParser) {
-  if (context.attribList.indexOf([context.attribName, context.attribValue]) !== -1 ||
-    context.tag.attributes.hasOwnProperty(context.attribName)) {
-    context.attribName = context.attribValue = ''
-    return
-  }
+
+  context.attribList.push([context.attribName, context.attribValue])
 
   if (context.xmlns) {
     const qn = qname(context.attribName, true)
@@ -858,17 +855,23 @@ function attrib(context: XmlParser) {
         tag.ns[local] = context.attribValue
       }
     }
-
-    // defer onattribute events until all attributes have been seen
-    // so any new bindings can take effect. preserve attribute order
-    // so deferred events can be emitted in document order
-    context.attribList.push([context.attribName, context.attribValue])
-  } else {
-    // in non-xmlns mode, we can emit the event right away
-    context.tag.attributes[context.attribName] = context.attribValue
   }
 
   context.attribName = context.attribValue = ''
+}
+
+
+function createAttributeNS(name: string, value: string, ns: Namespace) {
+  const qualName = qname(name, true)
+  const prefix = qualName.prefix
+  const local = qualName.local
+  const uri = prefix === '' ? '' : (ns[prefix] || '')
+  return { name, value, prefix, local, uri } as QualifiedAttribute
+}
+
+
+function createAttribute(name: string, value: string) {
+  return { name, value } as QualifiedAttribute
 }
 
 
@@ -903,29 +906,26 @@ function openTag(context: XmlParser, selfClosing?: boolean) {
       })
     }
 
-    // handle deferred onattribute events
     // Note: do not apply default ns to attributes:
     //   http://www.w3.org/TR/REC-xml-names/#defaulting
-    for (let i = 0, l = context.attribList.length; i < l; i++) {
-      const nv = context.attribList[i]
-      const name = nv[0]
-      const value = nv[1]
-      const qualName = qname(name, true)
-      const prefix = qualName.prefix
-      const local = qualName.local
-      const uri = prefix === '' ? '' : (tag.ns[prefix] || '')
-      const a: QualifiedAttribute = { name, value, prefix, local, uri }
+    const attributes = context.tag.attributes = context.attribList.map(
+      ([name, value]) => createAttributeNS(name, value, tag.ns)
+    )
 
-      // if there's any attributes with an undefined namespace,
-      // then fail on them now.
-      if (prefix && prefix !== 'xmlns' && !uri) {
-        strictFail(context, 'Unbound namespace prefix: ' + JSON.stringify(prefix))
-        a.uri = prefix
+    // if there's any attributes with an undefined namespace,
+    // then fail on them now.
+    attributes.forEach(a => {
+      if (a.prefix && a.prefix !== 'xmlns' && !a.uri) {
+        strictFail(context, 'Unbound namespace prefix: ' + JSON.stringify(a.prefix))
+        a.uri = a.prefix
       }
-      context.tag.attributes[name] = a
-    }
-  }
+    })
 
+  } else {
+    context.tag.attributes = context.attribList.map(
+      ([name, value]) => createAttribute(name, value)
+    )
+  }
   context.tag.isSelfClosing = !!selfClosing
 
   // process the tag

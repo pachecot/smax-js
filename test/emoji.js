@@ -2,7 +2,7 @@
 require(__dirname).test({
   xml: '<a>&#x1f525;</a>',
   expect: [
-    ['opentag', { name: 'a', attributes: {}, isSelfClosing: false }],
+    ['opentag', { name: 'a', attributes: [], isSelfClosing: false }],
     ['text', '\ud83d\udd25'],
     ['closetag', 'a']
   ],

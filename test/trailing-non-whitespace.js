@@ -3,7 +3,7 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       'name': 'span',
-      'attributes': {},
+      'attributes': [],
       isSelfClosing: false
     }],
     ['text', 'Welcome,'],

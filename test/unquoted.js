@@ -7,10 +7,10 @@ require(__dirname).test({
       'opentag',
       {
         name: 'span',
-        attributes: {
-          class: 'test',
-          hello: 'world'
-        },
+        attributes: [
+          { name: 'class', value: 'test' },
+          { name: 'hello', value: 'world' }
+        ],
         isSelfClosing: false
       }
     ],

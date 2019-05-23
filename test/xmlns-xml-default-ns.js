@@ -29,10 +29,10 @@ require(__dirname).test({
         local: 'elm',
         uri: 'http://foo',
         ns: { '': 'http://foo' },
-        attributes: {
-          xmlns: xmlnsAttr,
-          attr: attrAttr
-        },
+        attributes: [
+          xmlnsAttr,
+          attrAttr
+        ],
         isSelfClosing: true
       }
     ],

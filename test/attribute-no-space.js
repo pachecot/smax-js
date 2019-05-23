@@ -2,10 +2,14 @@
 require(__dirname).test({
   xml: '<root attr1="first"attr2="second"/>',
   expect: [
-    // ['opentagstart', 'root'],
-    // ['attribute', { name: 'attr1', value: 'first' }],
-    // ['attribute', { name: 'attr2', value: 'second' }],
-    ['opentag', { name: 'root', attributes: { attr1: 'first', attr2: 'second' }, isSelfClosing: true }],
+    ['opentag', {
+      name: 'root',
+      attributes: [
+        { name: 'attr1', value: 'first' },
+        { name: 'attr2', value: 'second' }
+      ],
+      isSelfClosing: true
+    }],
     ['closetag', 'root']
   ],
   strict: false,
@@ -16,11 +20,15 @@ require(__dirname).test({
 require(__dirname).test({
   xml: '<root attr1="first"attr2="second"/>',
   expect: [
-    // ['opentagstart', 'root'],
-    // ['attribute', { name: 'attr1', value: 'first' }],
     ['error', 'No whitespace between attributes\nLine: 0\nColumn: 20\nChar: a'],
-    // ['attribute', { name: 'attr2', value: 'second' }],
-    ['opentag', { name: 'root', attributes: { attr1: 'first', attr2: 'second' }, isSelfClosing: true }],
+    ['opentag', {
+      name: 'root',
+      attributes: [
+        { name: 'attr1', value: 'first' },
+        { name: 'attr2', value: 'second' }
+      ],
+      isSelfClosing: true
+    }],
     ['closetag', 'root']
   ],
   strict: true,
@@ -32,10 +40,13 @@ require(__dirname).test({
 require(__dirname).test({
   xml: '<root attr1="first" attr2="second"/>',
   expect: [
-    // ['opentagstart', 'root'],
-    // ['attribute', { name: 'attr1', value: 'first' }],
-    // ['attribute', { name: 'attr2', value: 'second' }],
-    ['opentag', { name: 'root', attributes: { attr1: 'first', attr2: 'second' }, isSelfClosing: true }],
+    ['opentag', {
+      name: 'root',
+      attributes: [
+        { name: 'attr1', value: 'first' },
+        { name: 'attr2', value: 'second' }],
+      isSelfClosing: true
+    }],
     ['closetag', 'root']
   ],
   strict: true,
@@ -46,10 +57,14 @@ require(__dirname).test({
 require(__dirname).test({
   xml: '<root attr1="first"\nattr2="second"/>',
   expect: [
-    // ['opentagstart', 'root'],
-    // ['attribute', { name: 'attr1', value: 'first' }],
-    // ['attribute', { name: 'attr2', value: 'second' }],
-    ['opentag', { name: 'root', attributes: { attr1: 'first', attr2: 'second' }, isSelfClosing: true }],
+    ['opentag', {
+      name: 'root',
+      attributes: [
+        { name: 'attr1', value: 'first' },
+        { name: 'attr2', value: 'second' }
+      ],
+      isSelfClosing: true
+    }],
     ['closetag', 'root']
   ],
   strict: true,
@@ -60,7 +75,13 @@ require(__dirname).test({
 require(__dirname).test({
   xml: '<root attr1="first"  attr2="second"/>',
   expect: [
-    ['opentag', { name: 'root', attributes: { attr1: 'first', attr2: 'second' }, isSelfClosing: true }],
+    ['opentag', {
+      name: 'root',
+      attributes: [
+        { name: 'attr1', value: 'first' },
+        { name: 'attr2', value: 'second' }],
+      isSelfClosing: true
+    }],
     ['closetag', 'root']
   ],
   strict: true,

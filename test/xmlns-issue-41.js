@@ -21,22 +21,22 @@ var ex1 = [
       uri: '',
       prefix: '',
       local: 'parent',
-      attributes: {
-        'a:attr': {
+      attributes: [
+        {
           name: 'a:attr',
           local: 'attr',
           prefix: 'a',
           uri: 'http://ATTRIBUTE',
           value: 'value'
         },
-        'xmlns:a': {
+        {
           name: 'xmlns:a',
           local: 'a',
           prefix: 'xmlns',
           uri: 'http://www.w3.org/2000/xmlns/',
           value: 'http://ATTRIBUTE'
         }
-      },
+      ],
       ns: {
         a: 'http://ATTRIBUTE'
       },
@@ -57,8 +57,16 @@ var ex1 = [
 ]
 
 // swap the order of elements 2 and 3
-var ex2 = ex1.slice(0)
-var expected = [ex1, ex2]
+var ex2 = ex1.slice()
+ex2[1] = ex2[1].slice()
+ex2[1][1] = {
+  ...ex1[1][1],
+  attributes: [
+    ex1[1][1].attributes[1],
+    ex1[1][1].attributes[0]
+  ]
+}
+var expected = [ex2, ex1]
 
 xmls.forEach(function (x, i) {
   t.test({

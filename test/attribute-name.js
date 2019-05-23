@@ -8,15 +8,15 @@ require(__dirname).test({
         prefix: '',
         local: 'root',
         uri: '',
-        attributes: {
-          length: {
+        attributes: [
+          {
             name: 'length',
             value: '12345',
             prefix: '',
             local: 'length',
             uri: ''
           }
-        },
+        ],
         ns: {},
         isSelfClosing: false
       }

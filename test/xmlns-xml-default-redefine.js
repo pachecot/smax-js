@@ -14,15 +14,15 @@ require(__dirname).test({
         uri: 'http://www.w3.org/XML/1998/namespace',
         prefix: 'xml',
         local: 'root',
-        attributes: {
-          'xmlns:xml': {
+        attributes: [
+          {
             name: 'xmlns:xml',
             local: 'xml',
             prefix: 'xmlns',
             uri: 'http://www.w3.org/2000/xmlns/',
             value: 'ERROR'
           }
-        },
+        ],
         ns: {},
         isSelfClosing: true
       }

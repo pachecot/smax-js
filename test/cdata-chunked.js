@@ -1,6 +1,6 @@
 require(__dirname).test({
   expect: [
-    ['opentag', { 'name': 'r', 'attributes': {}, 'isSelfClosing': false }],
+    ['opentag', { 'name': 'r', 'attributes': [], 'isSelfClosing': false }],
     ['opencdata', undefined],
     ['cdata', ' this is character data  '],
     ['closecdata', undefined],

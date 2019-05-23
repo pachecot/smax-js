@@ -41,12 +41,12 @@ export type AttributeNode = {
 
 export type Attribute = string
 
-export interface QualifiedAttribute extends QualifiedName {
-  value: string
+export interface QualifiedAttribute extends AttributeNode, QualifiedName {
 }
-export type Attributes = { [name: string]: Attribute }
 
-export type QualifiedAttributes = { [name: string]: QualifiedAttribute }
+export type Attributes = AttributeNode[] //{ [name: string]: Attribute }
+
+export type QualifiedAttributes = QualifiedAttribute[] // { [name: string]: QualifiedAttribute }
 
 export type Namespace = { [prefix: string]: string }
 

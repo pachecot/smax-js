@@ -8,7 +8,7 @@ require(__dirname).test({
         uri: 'http://www.w3.org/XML/1998/namespace',
         prefix: 'xml',
         local: 'root',
-        attributes: {},
+        attributes: [],
         ns: {},
         isSelfClosing: true
       }

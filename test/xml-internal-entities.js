@@ -1,5 +1,5 @@
 var iExpect = []
-var myAttributes = {}
+var myAttributes = []
 var ENTITIES = {}
 
 // generates xml like test0="&control;"
@@ -22,7 +22,7 @@ var entitiesToTest = {
 var xmlStart = '<a test="&amp;" '
 var xmlEnd = '/>'
 
-myAttributes['test'] = '&'
+myAttributes.push({ name: 'test', value: '&' })
 
 var entI = 0
 
@@ -40,10 +40,10 @@ for (var entity in entitiesToTest) {
       (xmlStart.length + entitiesToTest[entity][0] + 1) +
       '\nChar: ' + entitiesToTest[entity][1]
     ])
-    myAttributes[attribName] = '&' + entity + ';'
+    myAttributes.push({ name: attribName, value: '&' + entity + ';' })
   } else {
     ENTITIES[entity] = attribValue
-    myAttributes[attribName] = attribValue
+    myAttributes.push({ name: attribName, value: attribValue })
   }
 
   xmlStart += entity + ';" '

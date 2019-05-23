@@ -4,7 +4,7 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'span',
-      attributes: { class: 'test', hello: 'world' },
+      attributes: [{ name: 'class', value: 'test' }, { name: 'hello', value: 'world' }],
       isSelfClosing: false
     }],
     ['closetag', 'span']
@@ -19,7 +19,7 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'span',
-      attributes: { class: 'test', hello: 'world' },
+      attributes: [{ name: 'class', value: 'test' }, { name: 'hello', value: 'world' }],
       isSelfClosing: false
     }],
     ['closetag', 'span']
@@ -34,7 +34,7 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'span',
-      attributes: { class: 'test', hello: 'world' },
+      attributes: [{ name: 'class', value: 'test' }, { name: 'hello', value: 'world' }],
       isSelfClosing: false
     }],
     ['closetag', 'span']

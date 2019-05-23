@@ -8,15 +8,15 @@ require(__dirname).test({
         uri: '',
         prefix: '',
         local: 'root',
-        attributes: {
-          'xml:lang': {
+        attributes: [
+          {
             name: 'xml:lang',
             local: 'lang',
             prefix: 'xml',
             uri: 'http://www.w3.org/XML/1998/namespace',
             value: 'en'
           }
-        },
+        ],
         ns: {},
         isSelfClosing: true
       }

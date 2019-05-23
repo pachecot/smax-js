@@ -8,15 +8,15 @@ require(__dirname).test({
         prefix: '',
         local: 'root',
         uri: '',
-        attributes: {
-          length: {
+        attributes: [
+          {
             name: 'length',
             value: '12345',
             prefix: '',
             local: 'length',
             uri: ''
           }
-        },
+        ],
         ns: {},
         isSelfClosing: false
       }
@@ -39,9 +39,12 @@ require(__dirname).test({
       'opentag',
       {
         name: 'root',
-        attributes: {
-          length: '12345'
-        },
+        attributes: [
+          {
+            name: 'length',
+            value: '12345'
+          }
+        ],
         isSelfClosing: false
       }
     ],

@@ -8,7 +8,7 @@ require(__dirname).test({
         uri: '',
         prefix: '',
         local: 'xmlns',
-        attributes: {},
+        attributes: [],
         ns: {},
         isSelfClosing: true
       }
