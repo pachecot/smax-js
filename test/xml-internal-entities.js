@@ -22,18 +22,6 @@ var entitiesToTest = {
 var xmlStart = '<a test="&amp;" '
 var xmlEnd = '/>'
 
-iExpect.push([
-  'opentagstart',
-  'a'
-])
-
-iExpect.push([
-  'attribute',
-  {
-    name: 'test',
-    value: '&'
-  }
-])
 myAttributes['test'] = '&'
 
 var entI = 0
@@ -52,14 +40,9 @@ for (var entity in entitiesToTest) {
       (xmlStart.length + entitiesToTest[entity][0] + 1) +
       '\nChar: ' + entitiesToTest[entity][1]
     ])
-    iExpect.push([
-      'attribute',
-      { name: attribName, value: '&' + entity + ';' }
-    ])
     myAttributes[attribName] = '&' + entity + ';'
   } else {
     ENTITIES[entity] = attribValue
-    iExpect.push(['attribute', { name: attribName, value: attribValue }])
     myAttributes[attribName] = attribValue
   }
 

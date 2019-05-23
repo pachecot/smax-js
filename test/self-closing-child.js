@@ -8,19 +8,16 @@ require(__dirname).test({
     '</monkey>' +
     '</root>',
   expect: [
-    ['opentagstart', 'root'],
     ['opentag', {
       'name': 'root',
       'attributes': {},
       'isSelfClosing': false
     }],
-    ['opentagstart', 'child'],
     ['opentag', {
       'name': 'child',
       'attributes': {},
       'isSelfClosing': false
     }],
-    ['opentagstart', 'haha'],
     ['opentag', {
       'name': 'haha',
       'attributes': {},
@@ -28,7 +25,6 @@ require(__dirname).test({
     }],
     ['closetag', 'haha'],
     ['closetag', 'child'],
-    ['opentagstart', 'monkey'],
     ['opentag', {
       'name': 'monkey',
       'attributes': {},

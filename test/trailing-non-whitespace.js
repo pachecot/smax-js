@@ -1,7 +1,6 @@
 require(__dirname).test({
   xml: '<span>Welcome,</span> to monkey land',
   expect: [
-    ['opentagstart', 'span'],
     ['opentag', {
       'name': 'span',
       'attributes': {},

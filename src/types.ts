@@ -5,8 +5,6 @@ export type EmitterEvent =
   'sgmldeclaration' |
   'doctype' |
   'comment' |
-  'opentagstart' |
-  'attribute' |
   'opentag' |
   'closetag' |
   'opencdata' |

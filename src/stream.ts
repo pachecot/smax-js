@@ -1,5 +1,5 @@
 import { Duplex } from "stream";
-import { SAXOptions, Emitter, EventData, PINode, XmlTag, AttributeNode, NSNode, EmitterEvent } from './types'
+import { SAXOptions, Emitter, EventData, PINode, XmlTag, NSNode, EmitterEvent } from './types'
 import { XmlParser } from "./internal/xmlparser";
 
 export function createStream(strict: boolean, opt: SAXOptions) {
@@ -73,13 +73,11 @@ export enum MessageType {
   closenamespace,
   sgmldeclaration,
   text,
-  opentagstart,
   opentag,
   closetag,
   opencdata,
   cdata,
   closecdata,
-  attribute,
   end,
   error,
 }
@@ -97,13 +95,11 @@ export interface OpenNamespaceMessage extends Message<NSNode> { type: MessageTyp
 export interface CloseNamespaceMessage extends Message<NSNode> { type: MessageType.closenamespace }
 export interface SGMLDeclarationMessage extends Message<string> { type: MessageType.sgmldeclaration }
 export interface TextMessage extends Message<string> { type: MessageType.text }
-export interface OpenTagstartMessage extends Message<string> { type: MessageType.opentagstart }
 export interface OpenTagMessage extends Message<XmlTag> { type: MessageType.opentag }
 export interface CloseTagMessage extends Message<string> { type: MessageType.closetag }
 export interface OpenCDATAMessage extends Message<void> { type: MessageType.opencdata }
 export interface CDATAMessage extends Message<string> { type: MessageType.cdata }
 export interface CloseCDATAMessage extends Message<void> { type: MessageType.closecdata }
-export interface AttributeMessage extends Message<AttributeNode> { type: MessageType.attribute }
 export interface EndMessage extends Message<void> { type: MessageType.end }
 export interface ErrorMessage extends Message<Error> { type: MessageType.error }
 
@@ -117,12 +113,10 @@ export type XmlMessage =
   SGMLDeclarationMessage |
   TextMessage |
   OpenTagMessage |
-  OpenTagstartMessage |
   CloseTagMessage |
   OpenCDATAMessage |
   CDATAMessage |
   CloseCDATAMessage |
-  AttributeMessage |
   EndMessage |
   ErrorMessage
 
@@ -134,13 +128,11 @@ function messageCreator(type: MessageType.opennamespace): (ns: NSNode) => OpenNa
 function messageCreator(type: MessageType.closenamespace): (ns: NSNode) => CloseNamespaceMessage;
 function messageCreator(type: MessageType.sgmldeclaration): (decl: string) => SGMLDeclarationMessage;
 function messageCreator(type: MessageType.text): (text: string) => TextMessage;
-function messageCreator(type: MessageType.opentagstart): (tagName: string) => OpenTagstartMessage;
 function messageCreator(type: MessageType.opentag): (tag: XmlTag) => OpenTagMessage;
 function messageCreator(type: MessageType.closetag): (tagName: string) => CloseTagMessage;
 function messageCreator(type: MessageType.opencdata): () => OpenCDATAMessage;
 function messageCreator(type: MessageType.cdata): (cdata: string) => CDATAMessage;
 function messageCreator(type: MessageType.closecdata): () => CloseCDATAMessage;
-function messageCreator(type: MessageType.attribute): (attrib: AttributeNode) => AttributeMessage;
 function messageCreator(type: MessageType.end): () => EndMessage;
 function messageCreator(type: MessageType.error): (error: Error) => ErrorMessage;
 function messageCreator<T extends EventData>(type: MessageType): (t: T) => XmlMessage {
@@ -159,13 +151,11 @@ export const messages = {
   closenamespace: messageCreator(MessageType.closenamespace),
   sgmldeclaration: messageCreator(MessageType.sgmldeclaration),
   text: messageCreator(MessageType.text),
-  opentagstart: messageCreator(MessageType.opentagstart),
   opentag: messageCreator(MessageType.opentag),
   closetag: messageCreator(MessageType.closetag),
   opencdata: messageCreator(MessageType.opencdata),
   cdata: messageCreator(MessageType.cdata),
   closecdata: messageCreator(MessageType.closecdata),
-  attribute: messageCreator(MessageType.attribute),
   end: messageCreator(MessageType.end),
   error: messageCreator(MessageType.error),
 

@@ -2,7 +2,6 @@
 require(__dirname).test({
   xml: '<xml>&#Xd;&#X0d;\n</xml>',
   expect: [
-    ['opentagstart', 'xml'],
     ['opentag', { name: 'xml', attributes: {}, isSelfClosing: false }],
     ['text', '\r\r\n'],
     ['closetag', 'xml']

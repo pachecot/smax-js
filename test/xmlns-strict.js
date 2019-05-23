@@ -11,10 +11,6 @@ require(__dirname).test({
     '</root>',
   expect: [
     [
-      'opentagstart',
-      'root'
-    ],
-    [
       'opentag',
       {
         name: 'root',
@@ -24,20 +20,6 @@ require(__dirname).test({
         attributes: {},
         ns: {},
         isSelfClosing: false
-      }
-    ],
-    [
-      'opentagstart',
-      'plain'
-    ],
-    [
-      'attribute',
-      {
-        name: 'attr',
-        value: 'normal',
-        prefix: '',
-        local: 'attr',
-        uri: ''
       }
     ],
     [
@@ -65,24 +47,10 @@ require(__dirname).test({
       'plain'
     ],
     [
-      'opentagstart',
-      'ns1'
-    ],
-    [
       'opennamespace',
       {
         prefix: '',
         uri: 'uri:default'
-      }
-    ],
-    [
-      'attribute',
-      {
-        name: 'xmlns',
-        value: 'uri:default',
-        prefix: 'xmlns',
-        local: '',
-        uri: 'http://www.w3.org/2000/xmlns/'
       }
     ],
     [
@@ -105,20 +73,6 @@ require(__dirname).test({
           '': 'uri:default'
         },
         isSelfClosing: false
-      }
-    ],
-    [
-      'opentagstart',
-      'plain'
-    ],
-    [
-      'attribute',
-      {
-        name: 'attr',
-        value: 'normal',
-        prefix: '',
-        local: 'attr',
-        uri: ''
       }
     ],
     [
@@ -159,24 +113,10 @@ require(__dirname).test({
       }
     ],
     [
-      'opentagstart',
-      'ns2'
-    ],
-    [
       'opennamespace',
       {
         prefix: 'a',
         uri: 'uri:nsa'
-      }
-    ],
-    [
-      'attribute',
-      {
-        name: 'xmlns:a',
-        value: 'uri:nsa',
-        prefix: 'xmlns',
-        local: 'a',
-        uri: 'http://www.w3.org/2000/xmlns/'
       }
     ],
     [
@@ -199,20 +139,6 @@ require(__dirname).test({
           a: 'uri:nsa'
         },
         isSelfClosing: false
-      }
-    ],
-    [
-      'opentagstart',
-      'plain'
-    ],
-    [
-      'attribute',
-      {
-        name: 'attr',
-        value: 'normal',
-        prefix: '',
-        local: 'attr',
-        uri: ''
       }
     ],
     [
@@ -240,20 +166,6 @@ require(__dirname).test({
     [
       'closetag',
       'plain'
-    ],
-    [
-      'opentagstart',
-      'a:ns'
-    ],
-    [
-      'attribute',
-      {
-        name: 'a:attr',
-        value: 'namespaced',
-        prefix: 'a',
-        local: 'attr',
-        uri: 'uri:nsa'
-      }
     ],
     [
       'opentag',

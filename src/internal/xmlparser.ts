@@ -607,10 +607,10 @@ function write(context: XmlParser, chunk?: string) {
           strictFail(context, 'Attribute without value')
           context.tag.attributes[context.attribName] = ''
           context.attribValue = ''
-          emitNode(context, 'attribute', {
-            name: context.attribName,
-            value: ''
-          })
+          // emitNode(context, 'attribute', {
+          //   name: context.attribName,
+          //   value: ''
+          // })
           context.attribName = ''
           if (c === '>') {
             openTag(context)
@@ -814,7 +814,7 @@ function newTag(context: XmlParser) {
     tag.ns = parent.ns
   }
   context.attribList = []
-  emitNode(context, 'opentagstart', tag.name)
+  // emitNode(context, 'opentagstart', tag.name)
 }
 
 function qname(name: string, attribute?: boolean) {
@@ -871,10 +871,10 @@ function attrib(context: XmlParser) {
   } else {
     // in non-xmlns mode, we can emit the event right away
     context.tag.attributes[context.attribName] = context.attribValue
-    emitNode(context, 'attribute', {
-      name: context.attribName,
-      value: context.attribValue
-    })
+    // emitNode(context, 'attribute', {
+    //   name: context.attribName,
+    //   value: context.attribValue
+    // })
   }
 
   context.attribName = context.attribValue = ''
@@ -932,7 +932,7 @@ function openTag(context: XmlParser, selfClosing?: boolean) {
         a.uri = prefix
       }
       context.tag.attributes[name] = a
-      emitNode(context, 'attribute', a)
+      // emitNode(context, 'attribute', a)
     }
     context.attribList = []
   }

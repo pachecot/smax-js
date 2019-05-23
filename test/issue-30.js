@@ -7,12 +7,10 @@ require(__dirname).test({
     '<data/>\n' +
     '</xml>',
   expect: [
-    ['opentagstart', 'xml'],
     ['opentag', { name: 'xml', attributes: {}, isSelfClosing: false }],
     ['text', '\n'],
     ['comment', ' \n  comment with a single dash- in it\n'],
     ['text', '\n'],
-    ['opentagstart', 'data'],
     ['opentag', { name: 'data', attributes: {}, isSelfClosing: true }],
     ['closetag', 'data'],
     ['text', '\n'],

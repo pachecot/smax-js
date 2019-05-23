@@ -1,4 +1,4 @@
-import { SAXOptions, XmlTag, PINode, NSNode, EventData, Emitter, EmitterEvent, AttributeNode } from './types'
+import { SAXOptions, XmlTag, PINode, NSNode, EventData, Emitter, EmitterEvent } from './types'
 import { XmlParser } from './internal/xmlparser';
 import { getPosition } from './internal/getPosition';
 
@@ -84,9 +84,6 @@ export class SAXParser {
   onclosecdata?: () => void;
   onend?: () => void;
   onerror?: (e: Error) => void;
-
-  onattribute?: (attr: AttributeNode) => void;
-  onopentagstart?: (tagName: string) => void;
 }
 
 function emitter(parser: SAXParser): Emitter {

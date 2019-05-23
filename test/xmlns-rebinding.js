@@ -7,10 +7,6 @@ require(__dirname).test({
     '</root>',
   expect: [
     [
-      'opentagstart',
-      'root'
-    ],
-    [
       'opennamespace',
       {
         prefix: 'x',
@@ -22,46 +18,6 @@ require(__dirname).test({
       {
         prefix: 'y',
         uri: 'y1'
-      }
-    ],
-    [
-      'attribute',
-      {
-        name: 'xmlns:x',
-        value: 'x1',
-        uri: 'http://www.w3.org/2000/xmlns/',
-        prefix: 'xmlns',
-        local: 'x'
-      }
-    ],
-    [
-      'attribute',
-      {
-        name: 'xmlns:y',
-        value: 'y1',
-        uri: 'http://www.w3.org/2000/xmlns/',
-        prefix: 'xmlns',
-        local: 'y'
-      }
-    ],
-    [
-      'attribute',
-      {
-        name: 'x:a',
-        value: 'x1',
-        uri: 'x1',
-        prefix: 'x',
-        local: 'a'
-      }
-    ],
-    [
-      'attribute',
-      {
-        name: 'y:a',
-        value: 'y1',
-        uri: 'y1',
-        prefix: 'y',
-        local: 'a'
       }
     ],
     [
@@ -109,24 +65,10 @@ require(__dirname).test({
       }
     ],
     [
-      'opentagstart',
-      'rebind'
-    ],
-    [
       'opennamespace',
       {
         prefix: 'x',
         uri: 'x2'
-      }
-    ],
-    [
-      'attribute',
-      {
-        name: 'xmlns:x',
-        value: 'x2',
-        uri: 'http://www.w3.org/2000/xmlns/',
-        prefix: 'xmlns',
-        local: 'x'
       }
     ],
     [
@@ -149,30 +91,6 @@ require(__dirname).test({
           x: 'x2'
         },
         isSelfClosing: false
-      }
-    ],
-    [
-      'opentagstart',
-      'check'
-    ],
-    [
-      'attribute',
-      {
-        name: 'x:a',
-        value: 'x2',
-        uri: 'x2',
-        prefix: 'x',
-        local: 'a'
-      }
-    ],
-    [
-      'attribute',
-      {
-        name: 'y:a',
-        value: 'y1',
-        uri: 'y1',
-        prefix: 'y',
-        local: 'a'
       }
     ],
     [
@@ -217,30 +135,6 @@ require(__dirname).test({
       {
         prefix: 'x',
         uri: 'x2'
-      }
-    ],
-    [
-      'opentagstart',
-      'check'
-    ],
-    [
-      'attribute',
-      {
-        name: 'x:a',
-        value: 'x1',
-        uri: 'x1',
-        prefix: 'x',
-        local: 'a'
-      }
-    ],
-    [
-      'attribute',
-      {
-        name: 'y:a',
-        value: 'y1',
-        uri: 'y1',
-        prefix: 'y',
-        local: 'a'
       }
     ],
     [

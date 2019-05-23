@@ -2,20 +2,6 @@ require(__dirname).test({
   xml: "<root length='12345'></root>",
   expect: [
     [
-      'opentagstart',
-      'root'
-    ],
-    [
-      'attribute',
-      {
-        name: 'length',
-        value: '12345',
-        prefix: '',
-        local: 'length',
-        uri: ''
-      }
-    ],
-    [
       'opentag',
       {
         name: 'root',
@@ -49,17 +35,6 @@ require(__dirname).test({
 require(__dirname).test({
   xml: "<root length='12345'></root>",
   expect: [
-    [
-      'opentagstart',
-      'root'
-    ],
-    [
-      'attribute',
-      {
-        name: 'length',
-        value: '12345'
-      }
-    ],
     [
       'opentag',
       {

@@ -7,32 +7,11 @@ var xmls = [
 ]
 
 var ex1 = [
-  ['opentagstart', 'parent'],
   [
     'opennamespace',
     {
       prefix: 'a',
       uri: 'http://ATTRIBUTE'
-    }
-  ],
-  [
-    'attribute',
-    {
-      name: 'xmlns:a',
-      value: 'http://ATTRIBUTE',
-      prefix: 'xmlns',
-      local: 'a',
-      uri: 'http://www.w3.org/2000/xmlns/'
-    }
-  ],
-  [
-    'attribute',
-    {
-      name: 'a:attr',
-      local: 'attr',
-      prefix: 'a',
-      uri: 'http://ATTRIBUTE',
-      value: 'value'
     }
   ],
   [
@@ -78,7 +57,7 @@ var ex1 = [
 ]
 
 // swap the order of elements 2 and 3
-var ex2 = [ex1[0], ex1[1], ex1[3], ex1[2]].concat(ex1.slice(4))
+var ex2 = ex1.slice(0)
 var expected = [ex1, ex2]
 
 xmls.forEach(function (x, i) {

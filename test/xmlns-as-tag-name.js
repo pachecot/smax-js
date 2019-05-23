@@ -2,10 +2,6 @@ require(__dirname).test({
   xml: '<xmlns/>',
   expect: [
     [
-      'opentagstart',
-      'xmlns'
-    ],
-    [
       'opentag',
       {
         name: 'xmlns',

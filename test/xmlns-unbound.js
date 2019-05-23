@@ -3,22 +3,8 @@ require(__dirname).test({
   opt: { xmlns: true },
   expect: [
     [
-      'opentagstart',
-      'root'
-    ],
-    [
       'error',
       'Unbound namespace prefix: "unbound"\nLine: 0\nColumn: 28\nChar: >'
-    ],
-    [
-      'attribute',
-      {
-        name: 'unbound:attr',
-        value: 'value',
-        uri: 'unbound',
-        prefix: 'unbound',
-        local: 'attr'
-      }
     ],
     [
       'opentag',

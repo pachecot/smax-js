@@ -8,7 +8,6 @@ require(__dirname).test({
     ['error', 'Max buffer length exceeded: tagName\nLine: 0\nColumn: 15\nChar: '],
     ['error', 'Max buffer length exceeded: tagName\nLine: 0\nColumn: 30\nChar: '],
     ['error', 'Max buffer length exceeded: tagName\nLine: 0\nColumn: 45\nChar: '],
-    ['opentagstart', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'],
     ['opentag', {
       'name': 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
       'attributes': {},

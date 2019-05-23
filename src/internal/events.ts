@@ -6,8 +6,6 @@ export const EVENTS: EmitterEvent[] = [
   'sgmldeclaration',
   'doctype',
   'comment',
-  'opentagstart',
-  'attribute',
   'opentag',
   'closetag',
   'opencdata',
