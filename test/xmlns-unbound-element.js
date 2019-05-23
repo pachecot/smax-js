@@ -4,11 +4,7 @@ require(__dirname).test({
   expect: [
     [
       'opentagstart',
-      {
-        name: 'unbound:root',
-        attributes: {},
-        ns: {}
-      }
+      'unbound:root'
     ],
     [
       'error',
@@ -41,11 +37,7 @@ require(__dirname).test({
   expect: [
     [
       'opentagstart',
-      {
-        name: 'unbound:root',
-        attributes: {},
-        ns: {}
-      }
+      'unbound:root'
     ],
     [
       'opennamespace',

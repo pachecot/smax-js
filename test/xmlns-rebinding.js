@@ -8,11 +8,7 @@ require(__dirname).test({
   expect: [
     [
       'opentagstart',
-      {
-        name: 'root',
-        attributes: {},
-        ns: {}
-      }
+      'root'
     ],
     [
       'opennamespace',
@@ -114,14 +110,7 @@ require(__dirname).test({
     ],
     [
       'opentagstart',
-      {
-        name: 'rebind',
-        attributes: {},
-        ns: {
-          x: 'x1',
-          y: 'y1'
-        }
-      }
+      'rebind'
     ],
     [
       'opennamespace',
@@ -164,13 +153,7 @@ require(__dirname).test({
     ],
     [
       'opentagstart',
-      {
-        name: 'check',
-        attributes: {},
-        ns: {
-          x: 'x2'
-        }
-      }
+      'check'
     ],
     [
       'attribute',
@@ -238,14 +221,7 @@ require(__dirname).test({
     ],
     [
       'opentagstart',
-      {
-        name: 'check',
-        attributes: {},
-        ns: {
-          x: 'x1',
-          y: 'y1'
-        }
-      }
+      'check'
     ],
     [
       'attribute',

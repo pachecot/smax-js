@@ -19,11 +19,7 @@ require(__dirname).test({
   expect: [
     [
       'opentagstart',
-      {
-        name: 'elm',
-        attributes: {},
-        ns: {}
-      }
+      'elm'
     ],
     [
       'opennamespace',

@@ -7,7 +7,7 @@ var xmls = [
 ]
 
 var ex1 = [
-  [ 'opentagstart', { name: 'parent', attributes: {}, ns: {} } ],
+  ['opentagstart', 'parent'],
   [
     'opennamespace',
     {

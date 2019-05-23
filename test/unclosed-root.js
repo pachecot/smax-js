@@ -3,10 +3,7 @@ require(__dirname).test({
   expect: [
     [
       'opentagstart',
-      {
-        name: 'root',
-        attributes: {}
-      }
+      'root'
     ],
     [
       'opentag',

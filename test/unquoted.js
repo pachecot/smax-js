@@ -5,10 +5,7 @@ require(__dirname).test({
   expect: [
     [
       'opentagstart',
-      {
-        name: 'span',
-        attributes: {}
-      }
+      'span'
     ],
     [
       'attribute',

@@ -1,6 +1,6 @@
 var parser = require(__dirname).test({
   expect: [
-    ['opentagstart', { 'name': 'T', attributes: {} }],
+    ['opentagstart', 'T'],
     ['opentag', { 'name': 'T', attributes: {}, isSelfClosing: false }],
     ['text', 'flush'],
     ['text', 'rest'],

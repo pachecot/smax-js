@@ -1,4 +1,4 @@
-var sax = require('../lib/sax')
+var sax = require('../lib')
 
 var t = require('tap')
 

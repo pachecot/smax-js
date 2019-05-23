@@ -5,10 +5,7 @@ require(__dirname).test({
   expect: [
     [
       'opentagstart',
-      {
-        name: 'a',
-        attributes: {}
-      }
+      'a'
     ],
     [
       'opentag',
@@ -20,10 +17,7 @@ require(__dirname).test({
     ],
     [
       'opentagstart',
-      {
-        name: 'b',
-        attributes: {}
-      }
+      'b'
     ],
     [
       'opentag',

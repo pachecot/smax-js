@@ -1,28 +1,38 @@
 var tap = require('tap')
-var saxStream = require('../lib/sax').createStream()
+var { PassThrough } = require('stream')
+var sax = require('../lib/index')
+var saxStream = sax.createStream()
 
 var b = Buffer.from('误')
 
-saxStream.on('text', function (text) {
-  tap.equal(text, b.toString())
+saxStream.on('data', function (action) {
+  if (action.type === sax.MessageType.text) {
+    tap.equal(action.payload, b.toString())
+  }
 })
 
-saxStream.write(Buffer.from('<test><a>'))
-saxStream.write(b.slice(0, 1))
-saxStream.write(b.slice(1))
-saxStream.write(Buffer.from('</a><b>'))
-saxStream.write(b.slice(0, 2))
-saxStream.write(b.slice(2))
-saxStream.write(Buffer.from('</b><c>'))
-saxStream.write(b)
-saxStream.write(Buffer.from('</c>'))
-saxStream.write(Buffer.concat([Buffer.from('<d>'), b.slice(0, 1)]))
-saxStream.end(Buffer.concat([b.slice(1), Buffer.from('</d></test>')]))
+var encStream = new PassThrough()
+encStream.setEncoding('utf8')
+encStream.pipe(saxStream)
 
-var saxStream2 = require('../lib/sax').createStream()
+encStream.write(Buffer.from('<test><a>'))
+encStream.write(b.slice(0, 1))
+encStream.write(b.slice(1))
+encStream.write(Buffer.from('</a><b>'))
+encStream.write(b.slice(0, 2))
+encStream.write(b.slice(2))
+encStream.write(Buffer.from('</b><c>'))
+encStream.write(b)
+encStream.write(Buffer.from('</c>'))
+encStream.write(Buffer.concat([Buffer.from('<d>'), b.slice(0, 1)]))
+encStream.end(Buffer.concat([b.slice(1), Buffer.from('</d></test>')]))
 
-saxStream2.on('text', function (text) {
-  tap.equal(text, '�')
+var saxStream2 = require('../lib/index').createStream(false)
+
+saxStream2.on('data', function (action) {
+  if (action.type === sax.MessageType.text) {
+    tap.equal(action.payload, '�')
+  }
 })
 
 saxStream2.write(Buffer.from('<root>'))

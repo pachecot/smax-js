@@ -24,10 +24,7 @@ var xmlEnd = '/>'
 
 iExpect.push([
   'opentagstart',
-  {
-    name: 'a',
-    attributes: {}
-  }
+  'a'
 ])
 
 iExpect.push([
@@ -78,7 +75,7 @@ iExpect.push([
     isSelfClosing: true
   }
 ])
-iExpect.push([ 'closetag', 'a' ])
+iExpect.push(['closetag', 'a'])
 
 var parser = require(__dirname).test({
   strict: true,
