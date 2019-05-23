@@ -2,14 +2,15 @@
   "name": "ssax",
   "description": "An streaming XML parser in JavaScript",
   "author": "Tom Pacheco <tomp@netp.org>",
-  "version": "1.2.4",
-  "main": "lib/sax.js",
+  "version": "1.2.4-1",
+  "main": "lib/index.js",
   "license": "ISC",
   "scripts": {
+    "build-rollup": "tsc && rollup build/index.js --format cjs --file lib/index.js",
     "build": "tsc",
-    "pretest": "tsc",
     "test": "tap test/*.js --cov -j4",
     "posttest": "standard test/*.js",
+    "test-lcov": "tap test/*.js --cov --coverage-report=lcov -j4",
     "preversion": "npm test",
     "postversion": "npm publish",
     "postpublish": "git push origin --all; git push origin --tags"
@@ -23,8 +24,10 @@
   "devDependencies": {
     "@types/node": "^12.0.2",
     "nyc": "^14.1.1",
+    "rollup": "^1.12.3",
     "standard": "^12.0.1",
     "tap": "^14.0.0",
+    "tslib": "^1.9.3",
     "typescript": "^3.4.5"
   }
 }
