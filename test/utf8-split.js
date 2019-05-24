@@ -27,7 +27,7 @@ encStream.write(Buffer.from('</c>'))
 encStream.write(Buffer.concat([Buffer.from('<d>'), b.slice(0, 1)]))
 encStream.end(Buffer.concat([b.slice(1), Buffer.from('</d></test>')]))
 
-var saxStream2 = require('../lib/index').createStream(false)
+var saxStream2 = require('../lib/index').createStream({ lenient: true})
 
 saxStream2.on('data', function (action) {
   if (action.type === sax.MessageType.text) {

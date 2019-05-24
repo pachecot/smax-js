@@ -1,20 +1,23 @@
 import { Duplex } from "stream";
-import { SAXOptions, Emitter, EventData, PINode, XmlTag, EmitterEvent } from './types'
+import { SAXOptions } from './types'
 import { XmlParser } from "./internal/xmlparser";
 import { XmlMessage, messageEmitter } from './messages';
 
-export function createStream(strict: boolean, opt: SAXOptions) {
-  return new SAXStream(strict, opt)
+export function createStream(opt: SAXOptions) {
+  return new SMAXStream(opt)
 }
-
-export class SAXStream extends Duplex {
+/**
+ * 
+ */
+export class SMAXStream extends Duplex {
 
   queue: XmlMessage[] = []
   _parser: XmlParser
 
-  constructor(strict: boolean = true, opt?: SAXOptions) {
+  constructor(opt?: SAXOptions) {
     super({ readableObjectMode: true })
-    this._parser = new XmlParser(emitter(this), strict, opt || {})
+    const emit = messageEmitter(this._push.bind(this))
+    this._parser = new XmlParser(emit, opt || {})
   }
 
   _push(message?: XmlMessage) {
@@ -46,13 +49,3 @@ export class SAXStream extends Duplex {
     this._push()
   }
 }
-
-function emitter(stream: SAXStream): Emitter {
-  return function (type: EmitterEvent, payload?: EventData) {
-    const h = messages[type]
-    if (h) {
-      stream._push(h(payload as any))
-    }
-  }
-}
-

@@ -12,7 +12,7 @@ export type EmitterEvent =
   'closecdata' |
   'error' |
   'end' |
-  'ready' 
+  'ready'
 
 export type Emitter = (event: EmitterEvent, data?: EventData) => void
 
@@ -23,11 +23,25 @@ export interface QualifiedName {
   uri: string
 }
 
+
+/**
+ * Object bag of settings regarding string formatting. 
+ * All default to `false` if not provided.
+ * 
+ */
 export interface SAXOptions {
+  /** allow lenient proccessing */
+  lenient?: boolean
+  /**  trim text and comment nodes */
   trim?: boolean
+  /** turn any whitespace into a single space. */
   normalize?: boolean
+  /** namespaces are supported. */
   xmlns?: boolean
+  /** track line/col/position. */
   position?: boolean
+  /** only parse [predefined XML entities] (http://www.w3.org/TR/REC-xml/#sec-predefined-ent)
+  (`&amp;`, `&apos;`, `&gt;`, `&lt;`, and `&quot;`) */
   strictEntities?: boolean
 }
 

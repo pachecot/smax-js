@@ -129,15 +129,15 @@ export class XmlParser implements Position {
   ns: Namespace = Object.create(rootNS)
 
   xmlns: boolean
-  strict: boolean
+  lenient: boolean
   strictEntities: boolean
   trackPosition: boolean
   opt: SAXOptions
 
-  constructor(readonly emit: Emitter, strict: boolean, opt: SAXOptions) {
+  constructor(readonly emit: Emitter, opt: SAXOptions) {
 
-    this.strict = strict
     this.opt = opt
+    this.lenient = !!opt.lenient
     this.xmlns = !!opt.xmlns
     this.strictEntities = !!opt.strictEntities
     this.ENTITIES = this.strictEntities ? Object.create(XML_ENTITIES) : Object.create(ENTITIES)
@@ -149,6 +149,7 @@ export class XmlParser implements Position {
   end() {
     end(this)
   }
+
   reset() {
     this.error = null
   }
@@ -313,7 +314,7 @@ function write(context: XmlParser, chunk?: string) {
           }
           context.textNode += chunk.substring(starti, i - 1)
         }
-        if (c === '<' && !(context.sawRoot && context.closedRoot && !context.strict)) {
+        if (c === '<' && !(context.sawRoot && context.closedRoot && context.lenient)) {
           context.state = STATE.OPEN_WAKA
           context.startTagPosition = context.position
         } else {
@@ -796,7 +797,7 @@ function strictFail(context: XmlParser, message: string) {
   if (typeof context !== 'object' || !(context instanceof XmlParser)) {
     throw new Error('bad call to strictFail')
   }
-  if (context.strict) {
+  if (!context.lenient) {
     error(context, message)
   }
 }

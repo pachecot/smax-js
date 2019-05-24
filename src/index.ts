@@ -15,7 +15,7 @@ export {
 } from "./internal/xmlparser";
 export {
   createStream,
-  SAXStream,
+  SMAXStream
 } from "./stream";
 export {
   MessageType,
