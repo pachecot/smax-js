@@ -9,7 +9,7 @@
     "build-rollup": "tsc && rollup build/index.js --format cjs --file lib/index.js",
     "build": "tsc",
     "test": "tap test/*.js --cov -j4",
-    "posttest": "standard test/*.js",
+    "posttest": "standard --fix test/*.js",
     "test-lcov": "tap test/*.js --cov --coverage-report=lcov -j4",
     "preversion": "npm test",
     "postversion": "npm publish",
