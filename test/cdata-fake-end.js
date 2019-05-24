@@ -1,10 +1,10 @@
 var p = require(__dirname).test({
   expect: [
-    ['opentag', { 'name': 'r', 'attributes': [], 'isSelfClosing': false }],
+    ['opentag', { 'name': 'r', 'id': 0, 'attributes': [], 'isSelfClosing': false }],
     ['opencdata', undefined],
     ['cdata', '[[[[[[[[]]]]]]]]'],
     ['closecdata', undefined],
-    ['closetag', 'r']
+    ['closetag', { 'name': 'r', 'id': 0 }]
   ]
 })
 var x = '<r><![CDATA[[[[[[[[[]]]]]]]]]]></r>'
@@ -15,11 +15,11 @@ p.close()
 
 var p2 = require(__dirname).test({
   expect: [
-    ['opentag', { 'name': 'r', 'attributes': [], 'isSelfClosing': false }],
+    ['opentag', { 'name': 'r', 'id': 0, 'attributes': [], 'isSelfClosing': false }],
     ['opencdata', undefined],
     ['cdata', '[[[[[[[[]]]]]]]]'],
     ['closecdata', undefined],
-    ['closetag', 'r']
+    ['closetag', { 'name': 'r', 'id': 0 }]
   ]
 })
 x = '<r><![CDATA[[[[[[[[[]]]]]]]]]]></r>'

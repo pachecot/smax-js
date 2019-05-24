@@ -17,9 +17,9 @@ function testPosition (chunks, expectedEvents) {
 }
 
 testPosition(['<div>abcdefgh</div>'], [
-  [ 'opentag', { position: 5, startTagPosition: 1 } ],
-  [ 'text', { position: 19, startTagPosition: 14 } ],
-  [ 'closetag', { position: 19, startTagPosition: 14 } ]
+  ['opentag', { position: 5, startTagPosition: 1 }],
+  ['text', { position: 19, startTagPosition: 14 }],
+  ['closetag', { position: 19, startTagPosition: 14 }]
 ])
 
 testPosition(['<div>abcde', 'fgh</div>'], [

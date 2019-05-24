@@ -1,8 +1,8 @@
 require(__dirname).test({
   xml: '<r>&#NaN;</r>',
   expect: [
-    ['opentag', { 'name': 'r', attributes: [], isSelfClosing: false }],
+    ['opentag', { 'name': 'r', id: 0, attributes: [], isSelfClosing: false }],
     ['text', '&#NaN;'],
-    ['closetag', 'r']
+    ['closetag', { 'name': 'r', id: 0 }]
   ]
 })

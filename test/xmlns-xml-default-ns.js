@@ -21,6 +21,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'elm',
+        id: 0,
         prefix: '',
         local: 'elm',
         uri: 'http://foo',
@@ -34,7 +35,10 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'elm'
+      {
+        name: 'elm',
+        id: 0
+      }
     ]
   ],
   strict: true,

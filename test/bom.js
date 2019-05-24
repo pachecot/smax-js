@@ -2,8 +2,8 @@
 require(__dirname).test({
   xml: '\uFEFF<P></P>',
   expect: [
-    ['opentag', { 'name': 'P', attributes: [], isSelfClosing: false }],
-    ['closetag', 'P']
+    ['opentag', { 'name': 'P', id: 0, attributes: [], isSelfClosing: false }],
+    ['closetag', { 'name': 'P', id: 0 }]
   ]
 })
 
@@ -11,9 +11,9 @@ require(__dirname).test({
 require(__dirname).test({
   xml: '\uFEFF<P BOM="\uFEFF">\uFEFFStarts and ends with BOM\uFEFF</P>',
   expect: [
-    ['opentag', { 'name': 'P', attributes: [{ name: 'BOM', value: '\uFEFF' }], isSelfClosing: false }],
+    ['opentag', { 'name': 'P', id: 0, attributes: [{ name: 'BOM', value: '\uFEFF' }], isSelfClosing: false }],
     ['text', '\uFEFFStarts and ends with BOM\uFEFF'],
-    ['closetag', 'P']
+    ['closetag', { 'name': 'P', id: 0 }]
   ]
 })
 
@@ -23,8 +23,8 @@ require(__dirname).test({
   expect: [
     ['error', 'Non-whitespace before first tag.\nLine: 0\nColumn: 2\nChar: \uFEFF'],
     ['text', '\uFEFF'],
-    ['opentag', { 'name': 'P', attributes: [], isSelfClosing: false }],
-    ['closetag', 'P']
+    ['opentag', { 'name': 'P', id: 0, attributes: [], isSelfClosing: false }],
+    ['closetag', { 'name': 'P', id: 0 }]
   ],
   strict: true
 })
@@ -35,8 +35,8 @@ require(__dirname).test({
   expect: [
     ['error', 'Non-whitespace before first tag.\nLine: 0\nColumn: 2\nChar: \uFEFF'],
     ['text', '\uFEFF'],
-    ['opentag', { 'name': 'P', attributes: [], isSelfClosing: false }],
-    ['closetag', 'P']
+    ['opentag', { 'name': 'P', id: 0, attributes: [], isSelfClosing: false }],
+    ['closetag', { 'name': 'P', id: 0 }]
   ],
   strict: true
 })

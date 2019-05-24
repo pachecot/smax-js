@@ -5,6 +5,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'xmlns',
+        id: 0,
         uri: '',
         prefix: '',
         local: 'xmlns',
@@ -15,7 +16,10 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'xmlns'
+      {
+        name: 'xmlns',
+        id: 0
+      }
     ]
   ],
   strict: true,

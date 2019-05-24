@@ -1,9 +1,9 @@
 var parser = require(__dirname).test({
   expect: [
-    ['opentag', { 'name': 'T', attributes: [], isSelfClosing: false }],
+    ['opentag', { 'name': 'T', id: 0, attributes: [], isSelfClosing: false }],
     ['text', 'flush'],
     ['text', 'rest'],
-    ['closetag', 'T']
+    ['closetag', { 'name': 'T', id: 0 }]
   ]
 })
 

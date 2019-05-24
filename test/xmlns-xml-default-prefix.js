@@ -5,6 +5,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'xml:root',
+        id: 0,
         uri: 'http://www.w3.org/XML/1998/namespace',
         prefix: 'xml',
         local: 'root',
@@ -15,7 +16,10 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'xml:root'
+      {
+        name: 'xml:root',
+        id: 0
+      }
     ]
   ],
   strict: true,

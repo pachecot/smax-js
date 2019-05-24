@@ -1,5 +1,5 @@
 
-import { Emitter, EventData, PINode, XmlTag, EmitterEvent, XmlDeclaration } from './types';
+import { Emitter, EventData, PINode, XmlTag, EmitterEvent, XmlDeclaration, TagKey } from './types';
 
 
 export enum MessageType {
@@ -32,7 +32,7 @@ export interface XMLDeclarationMessage extends Message<XmlDeclaration, MessageTy
 export interface SGMLDeclarationMessage extends Message<string, MessageType.sgmldeclaration> { }
 export interface TextMessage extends Message<string, MessageType.text> { }
 export interface OpenTagMessage extends Message<XmlTag, MessageType.opentag> { }
-export interface CloseTagMessage extends Message<string, MessageType.closetag> { }
+export interface CloseTagMessage extends Message<TagKey, MessageType.closetag> { }
 export interface OpenCDATAMessage extends Message<void, MessageType.opencdata> { }
 export interface CDATAMessage extends Message<string, MessageType.cdata> { }
 export interface CloseCDATAMessage extends Message<void, MessageType.closecdata> { }
@@ -63,7 +63,7 @@ function messageCreator(type: MessageType.sgmldeclaration): (decl: string) => SG
 function messageCreator(type: MessageType.xmldeclaration): (decl: XmlDeclaration) => XMLDeclarationMessage;
 function messageCreator(type: MessageType.text): (text: string) => TextMessage;
 function messageCreator(type: MessageType.opentag): (tag: XmlTag) => OpenTagMessage;
-function messageCreator(type: MessageType.closetag): (tagName: string) => CloseTagMessage;
+function messageCreator(type: MessageType.closetag): (tag: TagKey) => CloseTagMessage;
 function messageCreator(type: MessageType.opencdata): () => OpenCDATAMessage;
 function messageCreator(type: MessageType.cdata): (cdata: string) => CDATAMessage;
 function messageCreator(type: MessageType.closecdata): () => CloseCDATAMessage;

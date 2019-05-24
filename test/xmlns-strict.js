@@ -14,6 +14,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'root',
+        id: 0,
         prefix: '',
         local: 'root',
         uri: '',
@@ -26,6 +27,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'plain',
+        id: 1,
         prefix: '',
         local: 'plain',
         uri: '',
@@ -44,12 +46,16 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'plain'
+      {
+        name: 'plain',
+        id: 1
+      }
     ],
     [
       'opentag',
       {
         name: 'ns1',
+        id: 2,
         prefix: '',
         local: 'ns1',
         uri: 'uri:default',
@@ -72,6 +78,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'plain',
+        id: 3,
         prefix: '',
         local: 'plain',
         uri: 'uri:default',
@@ -92,16 +99,23 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'plain'
+      {
+        name: 'plain',
+        id: 3
+      }
     ],
     [
       'closetag',
-      'ns1'
+      {
+        name: 'ns1',
+        id: 2
+      }
     ],
     [
       'opentag',
       {
         name: 'ns2',
+        id: 4,
         prefix: '',
         local: 'ns2',
         uri: '',
@@ -124,6 +138,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'plain',
+        id: 5,
         prefix: '',
         local: 'plain',
         uri: '',
@@ -144,12 +159,16 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'plain'
+      {
+        name: 'plain',
+        id: 5
+      }
     ],
     [
       'opentag',
       {
         name: 'a:ns',
+        id: 6,
         prefix: 'a',
         local: 'ns',
         uri: 'uri:nsa',
@@ -168,15 +187,24 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'a:ns'
+      {
+        name: 'a:ns',
+        id: 6
+      }
     ],
     [
       'closetag',
-      'ns2'
+      {
+        name: 'ns2',
+        id: 4
+      }
     ],
     [
       'closetag',
-      'root'
+      {
+        name: 'root',
+        id: 0
+      }
     ]
   ],
   strict: true,

@@ -3,8 +3,8 @@ require(__dirname).test({
     '&spades; &copy; &rarr; &amp; ' +
     '&lt; < <  <   < &gt; &real; &weierp; &euro;</r>',
   expect: [
-    ['opentag', { 'name': 'r', attributes: [], isSelfClosing: false }],
+    ['opentag', { 'name': 'r', id: 0, attributes: [], isSelfClosing: false }],
     ['text', '⌋ ♠ © → & < < <  <   < > ℜ ℘ €'],
-    ['closetag', 'r']
+    ['closetag', { 'name': 'r', id: 0 }]
   ]
 })

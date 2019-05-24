@@ -11,6 +11,7 @@ var ex1 = [
     'opentag',
     {
       name: 'parent',
+      id: 0,
       uri: '',
       prefix: '',
       local: 'parent',
@@ -38,7 +39,10 @@ var ex1 = [
   ],
   [
     'closetag',
-    'parent'
+    {
+      name: 'parent',
+      id: 0
+    }
   ]
 ]
 

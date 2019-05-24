@@ -67,9 +67,15 @@ export interface NS {
   ns: Namespace
 }
 
+export interface TagKey {
+  name: string
+  id: number
+}
+
 export interface BaseTag {
   name: string
   isSelfClosing: boolean
+  id: number
 }
 
 export interface QualifiedTag extends NS, QualifiedName, BaseTag {
@@ -119,6 +125,7 @@ export interface PINode {
 export type EventData =
   string |
   XmlTag |
+  TagKey |
   XmlDeclaration |
   QualifiedAttribute |
   AttributeNode |

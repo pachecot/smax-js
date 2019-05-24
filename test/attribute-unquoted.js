@@ -2,6 +2,7 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'root',
+      id: 0,
       attributes: [
         {
           name: 'length',
@@ -17,7 +18,10 @@ require(__dirname).test({
       uri: '',
       isSelfClosing: false
     }],
-    ['closetag', 'root'],
+    ['closetag', {
+      name: 'root',
+      id: 0
+    }],
     ['end'],
     ['ready']
   ],

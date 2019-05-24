@@ -7,6 +7,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'span',
+        id: 0,
         attributes: [
           { name: 'class', value: 'test' },
           { name: 'hello', value: 'world' }
@@ -16,7 +17,10 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'span'
+      {
+        name: 'span',
+        id: 0
+      }
     ]
   ],
   strict: false,

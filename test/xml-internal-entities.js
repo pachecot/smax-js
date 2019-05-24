@@ -54,11 +54,12 @@ iExpect.push([
   'opentag',
   {
     name: 'a',
+    id: 0,
     attributes: myAttributes,
     isSelfClosing: true
   }
 ])
-iExpect.push(['closetag', 'a'])
+iExpect.push(['closetag', { name: 'a', id: 0 }])
 
 var parser = require(__dirname).test({
   strict: true,

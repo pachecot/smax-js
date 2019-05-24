@@ -5,6 +5,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'root',
+        id: 0,
         prefix: '',
         local: 'root',
         uri: '',
@@ -23,7 +24,10 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'root'
+      {
+        name: 'root',
+        id: 0
+      }
     ]
   ],
   strict: true,
@@ -39,6 +43,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'root',
+        id: 0,
         attributes: [
           {
             name: 'length',
@@ -50,7 +55,10 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'root'
+      {
+        name: 'root',
+        id: 0
+      }
     ]
   ],
   strict: true

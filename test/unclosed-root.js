@@ -5,6 +5,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'root',
+        id: 0,
         attributes: [],
         isSelfClosing: false
       }

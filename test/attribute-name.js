@@ -8,6 +8,7 @@ require(__dirname).test({
         prefix: '',
         local: 'root',
         uri: '',
+        id: 0,
         attributes: [
           {
             name: 'length',
@@ -23,7 +24,10 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'root'
+      {
+        name: 'root',
+        id: 0
+      }
     ]
   ],
   strict: true,

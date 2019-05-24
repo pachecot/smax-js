@@ -3,10 +3,14 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'span',
+      id: 0,
       attributes: [{ name: 'id', value: 'hello' }, { name: 'id', value: 'there' }],
       isSelfClosing: false
     }],
-    ['closetag', 'span']
+    ['closetag', {
+      name: 'span',
+      id: 0
+    }]
   ],
   strict: false,
   opt: {}

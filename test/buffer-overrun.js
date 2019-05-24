@@ -10,11 +10,15 @@ require(__dirname).test({
     ['error', 'Max buffer length exceeded: tagName\nLine: 0\nColumn: 45\nChar: '],
     ['opentag', {
       'name': 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      'id': 0,
       'attributes': [],
       'isSelfClosing': false
     }],
     ['text', 'yo'],
-    ['closetag', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ']
+    ['closetag', {
+      'name': 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      'id': 0
+    }]
   ]
 }).write('<abcdefghijklmn')
   .write('opqrstuvwxyzABC')

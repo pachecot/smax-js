@@ -4,13 +4,17 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'root',
+      id: 0,
       attributes: [
         { name: 'attr1', value: 'first' },
         { name: 'attr2', value: 'second' }
       ],
       isSelfClosing: true
     }],
-    ['closetag', 'root']
+    ['closetag', {
+      name: 'root',
+      id: 0
+    }]
   ],
   strict: false,
   opt: { lowercase: true }
@@ -23,13 +27,17 @@ require(__dirname).test({
     ['error', 'No whitespace between attributes\nLine: 0\nColumn: 20\nChar: a'],
     ['opentag', {
       name: 'root',
+      id: 0,
       attributes: [
         { name: 'attr1', value: 'first' },
         { name: 'attr2', value: 'second' }
       ],
       isSelfClosing: true
     }],
-    ['closetag', 'root']
+    ['closetag', {
+      name: 'root',
+      id: 0
+    }]
   ],
   strict: true,
   opt: {}
@@ -42,12 +50,16 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'root',
+      id: 0,
       attributes: [
         { name: 'attr1', value: 'first' },
         { name: 'attr2', value: 'second' }],
       isSelfClosing: true
     }],
-    ['closetag', 'root']
+    ['closetag', {
+      name: 'root',
+      id: 0
+    }]
   ],
   strict: true,
   opt: {}
@@ -59,13 +71,17 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'root',
+      id: 0,
       attributes: [
         { name: 'attr1', value: 'first' },
         { name: 'attr2', value: 'second' }
       ],
       isSelfClosing: true
     }],
-    ['closetag', 'root']
+    ['closetag', {
+      name: 'root',
+      id: 0
+    }]
   ],
   strict: true,
   opt: {}
@@ -77,12 +93,16 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'root',
+      id: 0,
       attributes: [
         { name: 'attr1', value: 'first' },
         { name: 'attr2', value: 'second' }],
       isSelfClosing: true
     }],
-    ['closetag', 'root']
+    ['closetag', {
+      name: 'root',
+      id: 0
+    }]
   ],
   strict: true,
   opt: {}

@@ -10,6 +10,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'unbound:root',
+        id: 0,
         uri: 'unbound',
         prefix: 'unbound',
         local: 'root',
@@ -20,7 +21,10 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'unbound:root'
+      {
+        name: 'unbound:root',
+        id: 0
+      }
     ]
   ]
 }).write('<unbound:root/>')
@@ -35,6 +39,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'unbound:root',
+        id: 0,
         uri: 'someuri',
         prefix: 'unbound',
         local: 'root',
@@ -55,7 +60,10 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'unbound:root'
+      {
+        name: 'unbound:root',
+        id: 0
+      }
     ]
   ]
 }).write('<unbound:root xmlns:unbound="someuri"/>')

@@ -3,11 +3,15 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       'name': 'span',
+      'id': 0,
       'attributes': [],
       isSelfClosing: false
     }],
     ['text', 'Welcome,'],
-    ['closetag', 'span'],
+    ['closetag', {
+      'name': 'span',
+      'id': 0
+    }],
     ['text', ' to monkey land'],
     ['end'],
     ['ready']

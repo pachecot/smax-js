@@ -1,4 +1,4 @@
-import { SAXOptions, XmlTag, PINode, EventData, Emitter, EmitterEvent, XmlDeclaration } from './types'
+import { SAXOptions, XmlTag, PINode, EventData, Emitter, EmitterEvent, XmlDeclaration, TagKey } from './types'
 import { XmlParser } from './internal/xmlparser';
 import { getPosition } from './internal/getPosition';
 
@@ -154,7 +154,7 @@ export class SAXParser {
   /**
    * close tag event 
    */
-  onclosetag?: (tagName: string) => void;
+  onclosetag?: (tag: TagKey) => void;
 
   /**
    * start cdata event

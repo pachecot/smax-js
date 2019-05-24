@@ -4,10 +4,14 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'span',
+      id: 0,
       attributes: [{ name: 'class', value: 'test' }, { name: 'hello', value: 'world' }],
       isSelfClosing: false
     }],
-    ['closetag', 'span']
+    ['closetag', {
+      name: 'span',
+      id: 0
+    }]
   ],
   strict: false,
   opt: {}
@@ -19,10 +23,14 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'span',
+      id: 0,
       attributes: [{ name: 'class', value: 'test' }, { name: 'hello', value: 'world' }],
       isSelfClosing: false
     }],
-    ['closetag', 'span']
+    ['closetag', {
+      name: 'span',
+      id: 0
+    }]
   ],
   strict: false,
   opt: { lowercase: true }
@@ -34,10 +42,14 @@ require(__dirname).test({
   expect: [
     ['opentag', {
       name: 'span',
+      id: 0,
       attributes: [{ name: 'class', value: 'test' }, { name: 'hello', value: 'world' }],
       isSelfClosing: false
     }],
-    ['closetag', 'span']
+    ['closetag', {
+      name: 'span',
+      id: 0
+    }]
   ],
   strict: false,
   opt: { lowercasetags: true }

@@ -18,13 +18,17 @@ require(__dirname).test({
       'opentag',
       {
         name: 'table',
+        id: 0,
         attributes: [],
         isSelfClosing: true
       }
     ],
     [
       'closetag',
-      'table'
+      {
+        name: 'table',
+        id: 0
+      }
     ]
   ],
   strict: true,
@@ -51,6 +55,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'table',
+        id: 0,
         attributes: [],
         isSelfClosing: false
       }
@@ -59,6 +64,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'tr',
+        id: 1,
         attributes: [],
         isSelfClosing: false
       }
@@ -67,6 +73,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'td',
+        id: 2,
         attributes: [],
         isSelfClosing: false
       }
@@ -77,12 +84,16 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'td'
+      {
+        name: 'td',
+        id: 2
+      }
     ],
     [
       'opentag',
       {
         name: 'td',
+        id: 3,
         attributes: [],
         isSelfClosing: false
       }
@@ -93,15 +104,24 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'td'
+      {
+        name: 'td',
+        id: 3
+      }
     ],
     [
       'closetag',
-      'tr'
+      {
+        name: 'tr',
+        id: 1
+      }
     ],
     [
       'closetag',
-      'table'
+      {
+        name: 'table',
+        id: 0
+      }
     ]
   ],
   strict: true,

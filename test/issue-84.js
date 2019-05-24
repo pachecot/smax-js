@@ -3,9 +3,9 @@ require(__dirname).test({
   xml: '<?has unbalanced "quotes?><xml>body</xml>',
   expect: [
     ['processinginstruction', { name: 'has', body: 'unbalanced "quotes' }],
-    ['opentag', { name: 'xml', attributes: [], isSelfClosing: false }],
+    ['opentag', { name: 'xml', id: 0, attributes: [], isSelfClosing: false }],
     ['text', 'body'],
-    ['closetag', 'xml']
+    ['closetag', { name: 'xml', id: 0 }]
   ],
   strict: false,
   opt: { lowercasetags: true, noscript: true }

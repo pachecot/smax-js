@@ -10,6 +10,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'root',
+        id: 0,
         uri: '',
         prefix: '',
         local: 'root',
@@ -54,6 +55,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'rebind',
+        id: 1,
         uri: '',
         prefix: '',
         local: 'rebind',
@@ -76,6 +78,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'check',
+        id: 2,
         uri: '',
         prefix: '',
         local: 'check',
@@ -103,16 +106,23 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'check'
+      {
+        name: 'check',
+        id: 2
+      }
     ],
     [
       'closetag',
-      'rebind'
+      {
+        name: 'rebind',
+        id: 1
+      }
     ],
     [
       'opentag',
       {
         name: 'check',
+        id: 3,
         uri: '',
         prefix: '',
         local: 'check',
@@ -141,11 +151,17 @@ require(__dirname).test({
     ],
     [
       'closetag',
-      'check'
+      {
+        name: 'check',
+        id: 3
+      }
     ],
     [
       'closetag',
-      'root'
+      {
+        name: 'root',
+        id: 0
+      }
     ]
   ],
   strict: true,

@@ -7,6 +7,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'a',
+        id: 0,
         attributes: [],
         isSelfClosing: false
       }
@@ -15,6 +16,7 @@ require(__dirname).test({
       'opentag',
       {
         name: 'b',
+        id: 1,
         attributes: [],
         isSelfClosing: false
       }
@@ -24,12 +26,16 @@ require(__dirname).test({
       '</c>'
     ],
     [
-      'closetag',
-      'b'
+      'closetag', {
+        name: 'b',
+        id: 1
+      }
     ],
     [
-      'closetag',
-      'a'
+      'closetag', {
+        name: 'a',
+        id: 0
+      }
     ]
   ],
   strict: false,

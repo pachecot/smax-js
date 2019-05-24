@@ -43,7 +43,6 @@ const nameBody = new RegExp('[:' + bodyChar + ']')
 const entityStart = new RegExp('[#:' + startChar + ']')
 const entityBody = new RegExp('[#:' + bodyChar + ']')
 
-
 function isWhitespace(c: string) {
   return c === ' ' || c === '\n' || c === '\r' || c === '\t'
 }
@@ -85,7 +84,8 @@ export function setMaxBufferLength(length: number) {
 const NULL_TAG: Tag = {
   attributes: [],
   name: '',
-  isSelfClosing: true
+  isSelfClosing: true,
+  id: -1
 }
 
 
@@ -123,6 +123,8 @@ export class XmlParser implements Position {
   line = 0
   column = 0
   startTagPosition: number = 0
+
+  tagid = 0
 
   // namespaces form a prototype chain.
   // it always points at the current tag,
@@ -943,7 +945,9 @@ function openTag(context: XmlParser, selfClosing?: boolean) {
       ([name, value]) => createAttribute(name, value)
     )
   }
+
   context.tag.isSelfClosing = !!selfClosing
+  context.tag.id = context.tagid++
 
   // process the tag
   context.sawRoot = true
@@ -992,7 +996,8 @@ function closeTag(context: XmlParser) {
   while (s-- > t) {
     context.tag = context.tags.pop() as QualifiedTag
     context.tagName = context.tag.name
-    emitNode(context, 'closetag', context.tagName)
+    const id = context.tag.id
+    emitNode(context, 'closetag', { name: context.tagName, id: id })
 
   }
   if (t === 0) {
