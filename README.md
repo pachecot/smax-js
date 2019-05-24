@@ -1,6 +1,10 @@
-# ssax js
+# SMAX : Simple Message Api for XML
 
-A sax-style parser for XML.
+A XML parser. 
+
+A XML sax-style parser.
+
+A message based XML stream parser
 
 Designed with [node](http://nodejs.org/) in mind, but should work fine in
 the browser or other CommonJS implementations.
@@ -36,15 +40,14 @@ with that. If you want to listen to the `ondoctype` event, and then fetch
 the doctypes, and read the entities and add them to `parser.ENTITIES`, then
 be my guest.
 
-Unknown entities will fail in strict mode, and in loose mode, will pass
+Unknown entities will fail in unless in lenient mode, when they will pass
 through unmolested.
 
 ## Usage
 
 ```javascript
-var sax = require("./lib/sax"),
-  strict = true, // set to false for html-mode
-  parser = sax.parser(strict);
+var smax = require("smax")
+var parser = smax.parser();
 
 parser.onerror = function (e) {
   // an error happened.
@@ -55,9 +58,6 @@ parser.ontext = function (t) {
 parser.onopentag = function (node) {
   // opened a tag.  node has "name" and "attributes"
 };
-parser.onattribute = function (attr) {
-  // an attribute.  attr has "name" and "value"
-};
 parser.onend = function () {
   // parser stream is done, and ready to have more stuff written to it.
 };
@@ -66,41 +66,35 @@ parser.write('<xml>Hello, <who name="world">world</who>!</xml>').close();
 
 // stream usage
 // takes the same options as the parser
-var saxStream = require("sax").createStream(strict, options)
+var saxStream = require("smax").createStream(options)
+
 saxStream.on("error", function (e) {
   // unhandled errors will throw, since this is a proper node
   // event emitter.
   console.error("error!", e)
   // clear the error
-  this._parser.error = null
   this._parser.resume()
 })
-saxStream.on("opentag", function (node) {
-  // same object as above
-})
+
 // pipe is supported, and it's readable/writable
-// same chunks coming in also go out.
+// 
 fs.createReadStream("file.xml")
   .pipe(saxStream)
-  .pipe(fs.createWriteStream("file-copy.xml"))
+  .pipe(...)
 ```
-
 
 ## Arguments
 
 Pass the following arguments to the parser function.  All are optional.
 
-`strict` - Boolean. Whether or not to be a jerk. Default: `false`.
-
-`opt` - Object bag of settings regarding string formatting.  All default to `false`.
+`opt` - Object bag of settings regarding string formatting. All default to `false`.
 
 Settings supported:
 
+* `lenient` - Boolean. Whether or not parser will fail on improperly formed xml.
 * `trim` - Boolean. Whether or not to trim text and comment nodes.
 * `normalize` - Boolean. If true, then turn any whitespace into a single
   space.
-* `lowercase` - Boolean. If true, then lowercase tag names and attribute names
-  in loose mode, rather than uppercasing them.
 * `xmlns` - Boolean. If true, then namespaces are supported.
 * `position` - Boolean. If false, then don't track line/col/position.
 * `strictEntities` - Boolean. If true, only parse [predefined XML
@@ -124,19 +118,15 @@ state.
 
 At all times, the parser object will have the following members:
 
-`line`, `column`, `position` - Indications of the position in the XML
-document where the parser currently is looking.
+`position` - returns an object indicating the postions in the XML document
+- `position` - current offset 
+- `line` - current line
+- `column` - current column
+- `startTagPosition` - position where the current tag starts.
 
-`startTagPosition` - Indicates the position where the current tag starts.
-
-`closed` - Boolean indicating whether or not the parser can be written to.
-If it's `true`, then wait for the `ready` event to write again.
-
-`strict` - Boolean indicating whether or not the parser is a jerk.
+`strict` - Boolean indicating whether or not the parser is strict xml mode.
 
 `opt` - Any options passed into the constructor.
-
-`tag` - The current tag being dealt with.
 
 And a bunch of other stuff that you probably shouldn't touch.
 
@@ -168,11 +158,6 @@ would trigger this kind of event. This is a weird thing to support, so it
 might go away at some point. SAX isn't intended to be used to parse SGML,
 after all.
 
-`opentagstart` - Emitted immediately when the tag name is available,
-but before any attributes are encountered.  Argument: object with a
-`name` field and an empty `attributes` set.  Note that this is the
-same object that will later be emitted in the `opentag` event.
-
 `opentag` - An opening tag. Argument: object with `name` and `attributes`.
 In non-strict mode, tag names are uppercased, unless the `lowercase`
 option is set.  If the `xmlns` option is set, then it will contain
@@ -183,11 +168,6 @@ namespace binding information on the `ns` member, and will have a
 parent closes. In strict mode, well-formedness is enforced. Note that
 self-closing tags will have `closeTag` emitted immediately after `openTag`.
 Argument: tag name.
-
-`attribute` - An attribute node.  Argument: object with `name` and `value`.
-In non-strict mode, attribute names are uppercased, unless the `lowercase`
-option is set.  If the `xmlns` option is set, it will also contains namespace
-information.
 
 `comment` - A comment node.  Argument: the string of the comment.
 
@@ -200,12 +180,6 @@ character data.
 
 `closecdata` - The closing tag (`]]>`) of a `<![CDATA[` block.
 
-`opennamespace` - If the `xmlns` option is set, then this event will
-signal the start of a new namespace binding.
-
-`closenamespace` - If the `xmlns` option is set, then this event will
-signal the end of a namespace binding.
-
 `end` - Indication that the closed stream has ended.
 
 `ready` - Indication that the stream has reset, and is ready to be written
@@ -217,9 +191,9 @@ If you pass `noscript: true`, then this behavior is suppressed.
 
 ## Reporting Problems
 
-It's best to write a failing test if you find an issue.  I will always
+It's best to write a failing test if you find an issue. I will always
 accept pull requests with failing tests if they demonstrate intended
 behavior, but it is very hard to figure out what issue you're describing
-without a test.  Writing a test is also the best way for you yourself
+without a test. Writing a test is also the best way for you yourself
 to figure out if you really understand the issue you think you have with
 sax-js.
