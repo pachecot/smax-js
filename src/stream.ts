@@ -1,5 +1,5 @@
 import { Duplex } from "stream";
-import { SAXOptions, Emitter, EventData, PINode, XmlTag, NSNode, EmitterEvent } from './types'
+import { SAXOptions, Emitter, EventData, PINode, XmlTag, EmitterEvent } from './types'
 import { XmlParser } from "./internal/xmlparser";
 
 export function createStream(strict: boolean, opt: SAXOptions) {
@@ -69,8 +69,6 @@ export enum MessageType {
   processinginstruction,
   doctype,
   comment,
-  opennamespace,
-  closenamespace,
   sgmldeclaration,
   text,
   opentag,
@@ -91,8 +89,6 @@ export interface ReadyMessage extends Message<void> { type: MessageType.ready }
 export interface ProcessingInstructionMessage extends Message<PINode> { type: MessageType.processinginstruction }
 export interface DoctypeMessage extends Message<string> { type: MessageType.doctype }
 export interface CommentMessage extends Message<string> { type: MessageType.comment }
-export interface OpenNamespaceMessage extends Message<NSNode> { type: MessageType.opennamespace }
-export interface CloseNamespaceMessage extends Message<NSNode> { type: MessageType.closenamespace }
 export interface SGMLDeclarationMessage extends Message<string> { type: MessageType.sgmldeclaration }
 export interface TextMessage extends Message<string> { type: MessageType.text }
 export interface OpenTagMessage extends Message<XmlTag> { type: MessageType.opentag }
@@ -108,8 +104,6 @@ export type XmlMessage =
   ProcessingInstructionMessage |
   DoctypeMessage |
   CommentMessage |
-  OpenNamespaceMessage |
-  CloseNamespaceMessage |
   SGMLDeclarationMessage |
   TextMessage |
   OpenTagMessage |
@@ -124,8 +118,6 @@ function messageCreator(type: MessageType.ready): () => ReadyMessage;
 function messageCreator(type: MessageType.processinginstruction): (pinst: PINode) => ProcessingInstructionMessage;
 function messageCreator(type: MessageType.doctype): (doctype: string) => DoctypeMessage;
 function messageCreator(type: MessageType.comment): (comment: string) => CommentMessage;
-function messageCreator(type: MessageType.opennamespace): (ns: NSNode) => OpenNamespaceMessage;
-function messageCreator(type: MessageType.closenamespace): (ns: NSNode) => CloseNamespaceMessage;
 function messageCreator(type: MessageType.sgmldeclaration): (decl: string) => SGMLDeclarationMessage;
 function messageCreator(type: MessageType.text): (text: string) => TextMessage;
 function messageCreator(type: MessageType.opentag): (tag: XmlTag) => OpenTagMessage;
@@ -147,8 +139,6 @@ export const messages = {
   processinginstruction: messageCreator(MessageType.processinginstruction),
   doctype: messageCreator(MessageType.doctype),
   comment: messageCreator(MessageType.comment),
-  opennamespace: messageCreator(MessageType.opennamespace),
-  closenamespace: messageCreator(MessageType.closenamespace),
   sgmldeclaration: messageCreator(MessageType.sgmldeclaration),
   text: messageCreator(MessageType.text),
   opentag: messageCreator(MessageType.opentag),

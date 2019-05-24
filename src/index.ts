@@ -22,8 +22,6 @@ export {
   ProcessingInstructionMessage,
   DoctypeMessage,
   CommentMessage,
-  OpenNamespaceMessage,
-  CloseNamespaceMessage,
   SGMLDeclarationMessage,
   TextMessage,
   OpenTagMessage,

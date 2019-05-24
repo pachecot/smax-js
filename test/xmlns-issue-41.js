@@ -8,13 +8,6 @@ var xmls = [
 
 var ex1 = [
   [
-    'opennamespace',
-    {
-      prefix: 'a',
-      uri: 'http://ATTRIBUTE'
-    }
-  ],
-  [
     'opentag',
     {
       name: 'parent',
@@ -46,24 +39,17 @@ var ex1 = [
   [
     'closetag',
     'parent'
-  ],
-  [
-    'closenamespace',
-    {
-      prefix: 'a',
-      uri: 'http://ATTRIBUTE'
-    }
   ]
 ]
 
 // swap the order of elements 2 and 3
 var ex2 = ex1.slice()
-ex2[1] = ex2[1].slice()
-ex2[1][1] = {
-  ...ex1[1][1],
+ex2[0] = ex2[0].slice()
+ex2[0][1] = {
+  ...ex1[0][1],
   attributes: [
-    ex1[1][1].attributes[1],
-    ex1[1][1].attributes[0]
+    ex1[0][1].attributes[1],
+    ex1[0][1].attributes[0]
   ]
 }
 var expected = [ex2, ex1]

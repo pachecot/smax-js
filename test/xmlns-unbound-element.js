@@ -32,13 +32,6 @@ require(__dirname).test({
   },
   expect: [
     [
-      'opennamespace',
-      {
-        prefix: 'unbound',
-        uri: 'someuri'
-      }
-    ],
-    [
       'opentag',
       {
         name: 'unbound:root',
@@ -63,13 +56,6 @@ require(__dirname).test({
     [
       'closetag',
       'unbound:root'
-    ],
-    [
-      'closenamespace',
-      {
-        prefix: 'unbound',
-        uri: 'someuri'
-      }
     ]
   ]
 }).write('<unbound:root xmlns:unbound="someuri"/>')

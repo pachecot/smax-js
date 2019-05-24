@@ -12,9 +12,7 @@ export type EmitterEvent =
   'closecdata' |
   'error' |
   'end' |
-  'ready' |
-  'opennamespace' |
-  'closenamespace'
+  'ready' 
 
 export type Emitter = (event: EmitterEvent, data?: EventData) => void
 

@@ -47,13 +47,6 @@ require(__dirname).test({
       'plain'
     ],
     [
-      'opennamespace',
-      {
-        prefix: '',
-        uri: 'uri:default'
-      }
-    ],
-    [
       'opentag',
       {
         name: 'ns1',
@@ -104,20 +97,6 @@ require(__dirname).test({
     [
       'closetag',
       'ns1'
-    ],
-    [
-      'closenamespace',
-      {
-        prefix: '',
-        uri: 'uri:default'
-      }
-    ],
-    [
-      'opennamespace',
-      {
-        prefix: 'a',
-        uri: 'uri:nsa'
-      }
     ],
     [
       'opentag',
@@ -194,13 +173,6 @@ require(__dirname).test({
     [
       'closetag',
       'ns2'
-    ],
-    [
-      'closenamespace',
-      {
-        prefix: 'a',
-        uri: 'uri:nsa'
-      }
     ],
     [
       'closetag',

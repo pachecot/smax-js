@@ -13,7 +13,5 @@ export const EVENTS: EmitterEvent[] = [
   'closecdata',
   'error',
   'end',
-  'ready',
-  'opennamespace',
-  'closenamespace'
+  'ready'
 ];

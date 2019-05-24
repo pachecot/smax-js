@@ -1,4 +1,4 @@
-import { SAXOptions, XmlTag, PINode, NSNode, EventData, Emitter, EmitterEvent } from './types'
+import { SAXOptions, XmlTag, PINode, EventData, Emitter, EmitterEvent } from './types'
 import { XmlParser } from './internal/xmlparser';
 import { getPosition } from './internal/getPosition';
 
@@ -74,8 +74,6 @@ export class SAXParser {
   ondoctype?: (doctype: string) => void;
   oncomment?: (comment: string) => void;
   onsgmldeclaration?: (decl: string) => void;
-  onopennamespace?: (ns: NSNode) => void;
-  onclosenamespace?: (ns: NSNode) => void;
   ontext?: (t: string) => void;
   onopentag?: (tag: XmlTag) => void;
   onclosetag?: (tagName: string) => void;

@@ -896,16 +896,6 @@ function openTag(context: XmlParser, selfClosing?: boolean) {
       tag.uri = qn.prefix
     }
 
-    const parent = (context.tags[context.tags.length - 1] as QualifiedTag) || context
-    if (tag.ns && parent.ns !== tag.ns) {
-      Object.keys(tag.ns).forEach(function (p) {
-        emitNode(context, 'opennamespace', {
-          prefix: p,
-          uri: tag.ns[p]
-        })
-      })
-    }
-
     // Note: do not apply default ns to attributes:
     //   http://www.w3.org/TR/REC-xml-names/#defaulting
     const attributes = context.tag.attributes = context.attribList.map(
@@ -973,23 +963,10 @@ function closeTag(context: XmlParser) {
   context.tagName = tagName
   let s = context.tags.length
   while (s-- > t) {
-    const tag = context.tag = context.tags.pop() as QualifiedTag
+    context.tag = context.tags.pop() as QualifiedTag
     context.tagName = context.tag.name
     emitNode(context, 'closetag', context.tagName)
 
-    const x: { [_: string]: string } = {}
-    for (let i in tag.ns) {
-      x[i] = tag.ns[i]
-    }
-
-    const parent = (context.tags[context.tags.length - 1] as QualifiedTag) || context
-    if (context.xmlns && tag.ns !== parent.ns) {
-      // remove namespace bindings introduced by tag
-      Object.keys(tag.ns).forEach(function (p) {
-        const n = tag.ns[p]
-        emitNode(context, 'closenamespace', { prefix: p, uri: n })
-      })
-    }
   }
   if (t === 0) {
     context.closedRoot = true
