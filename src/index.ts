@@ -16,6 +16,8 @@ export {
 export {
   createStream,
   SAXStream,
+} from "./stream";
+export {
   MessageType,
   Message,
   ReadyMessage,
@@ -33,4 +35,5 @@ export {
   ErrorMessage,
   XmlMessage,
   messages
-} from "./stream";
+} from "./messages";
+export * from './types'
