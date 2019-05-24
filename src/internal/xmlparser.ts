@@ -1,4 +1,4 @@
-import { SAXOptions, XmlTag, QualifiedTag, Namespace, Position, Tag, QualifiedAttribute, Emitter, EventData, EmitterEvent } from '../types'
+import { SAXOptions, XmlTag, QualifiedTag, Namespace, Position, Tag, QualifiedAttribute, Emitter, EventData, EmitterEvent, XmlDeclaration } from '../types'
 import { ENTITIES, XML_ENTITIES } from './entities';
 
 const buffers = [
@@ -17,6 +17,7 @@ const buffers = [
 
 // this really needs to be replaced with character classes.
 // XML allows all manner of ridiculous numbers and digits.
+const XML = 'XML'
 const CDATA = '[CDATA['
 const DOCTYPE = 'DOCTYPE'
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace'
@@ -203,6 +204,19 @@ function flushBuffers(context: XmlParser) {
   }
 }
 
+
+const xmldecRE = /^version="(\d+\.?\d*)"(?:\s+encoding="([^"]+)")?(?:\s+standalone="(yes|no)")?\s*$/i
+
+function parseXmlDeclaration(body: string): XmlDeclaration | null {
+  const m = xmldecRE.exec(body)
+
+  if (!m) { return null }
+
+  const r: XmlDeclaration = { version: m[1] }
+  if (m[2]) { r.encoding = m[2] }
+  if (m[3]) { r.standalone = m[3].toLowerCase() as 'yes' | 'no' }
+  return r
+}
 
 enum STATE {
   /** leading byte order mark or whitespace */ BEGIN,
@@ -525,10 +539,22 @@ function write(context: XmlParser, chunk?: string) {
 
       case STATE.PROC_INST_ENDING:
         if (c === '>') {
-          emitNode(context, 'processinginstruction', {
-            name: context.procInstName,
-            body: context.procInstBody
-          })
+          if (context.procInstName.toUpperCase() == XML) {
+            if (context.sawRoot) {
+              strictFail(context, 'Inappropriately located xml declaration')
+            }
+            const xdec = parseXmlDeclaration(context.procInstBody)
+            if (xdec) {
+              emitNode(context, 'xmldeclaration', xdec)
+            } else {
+              strictFail(context, 'Invalid xml declaration')
+            }
+          } else {
+            emitNode(context, 'processinginstruction', {
+              name: context.procInstName,
+              body: context.procInstBody
+            })
+          }
           context.procInstName = context.procInstBody = ''
           context.state = STATE.TEXT
         } else {

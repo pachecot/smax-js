@@ -1,4 +1,4 @@
-import { SAXOptions, XmlTag, PINode, EventData, Emitter, EmitterEvent } from './types'
+import { SAXOptions, XmlTag, PINode, EventData, Emitter, EmitterEvent, XmlDeclaration } from './types'
 import { XmlParser } from './internal/xmlparser';
 import { getPosition } from './internal/getPosition';
 
@@ -127,6 +127,11 @@ export class SAXParser {
    * sgml declaration event 
    */
   onsgmldeclaration?: (decl: string) => void;
+
+  /**
+   * xml declaration event 
+   */
+  onxmldeclaration?: (decl: XmlDeclaration) => void;
 
   /**
    * text node event

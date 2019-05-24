@@ -1,5 +1,5 @@
 
-import { Emitter, EventData, PINode, XmlTag, EmitterEvent } from './types';
+import { Emitter, EventData, PINode, XmlTag, EmitterEvent, XmlDeclaration } from './types';
 
 
 export enum MessageType {
@@ -8,6 +8,7 @@ export enum MessageType {
   doctype,
   comment,
   sgmldeclaration,
+  xmldeclaration,
   text,
   opentag,
   closetag,
@@ -27,6 +28,7 @@ export interface ReadyMessage extends Message<void, MessageType.ready> { }
 export interface ProcessingInstructionMessage extends Message<PINode, MessageType.processinginstruction> { }
 export interface DoctypeMessage extends Message<string, MessageType.doctype> { }
 export interface CommentMessage extends Message<string, MessageType.comment> { }
+export interface XMLDeclarationMessage extends Message<XmlDeclaration, MessageType.xmldeclaration> { }
 export interface SGMLDeclarationMessage extends Message<string, MessageType.sgmldeclaration> { }
 export interface TextMessage extends Message<string, MessageType.text> { }
 export interface OpenTagMessage extends Message<XmlTag, MessageType.opentag> { }
@@ -41,6 +43,7 @@ export type XmlMessage = ReadyMessage |
   ProcessingInstructionMessage |
   DoctypeMessage |
   CommentMessage |
+  XMLDeclarationMessage |
   SGMLDeclarationMessage |
   TextMessage |
   OpenTagMessage |
@@ -57,6 +60,7 @@ function messageCreator(type: MessageType.processinginstruction): (pinst: PINode
 function messageCreator(type: MessageType.doctype): (doctype: string) => DoctypeMessage;
 function messageCreator(type: MessageType.comment): (comment: string) => CommentMessage;
 function messageCreator(type: MessageType.sgmldeclaration): (decl: string) => SGMLDeclarationMessage;
+function messageCreator(type: MessageType.xmldeclaration): (decl: XmlDeclaration) => XMLDeclarationMessage;
 function messageCreator(type: MessageType.text): (text: string) => TextMessage;
 function messageCreator(type: MessageType.opentag): (tag: XmlTag) => OpenTagMessage;
 function messageCreator(type: MessageType.closetag): (tagName: string) => CloseTagMessage;
@@ -79,6 +83,7 @@ export const messages = {
   doctype: messageCreator(MessageType.doctype),
   comment: messageCreator(MessageType.comment),
   sgmldeclaration: messageCreator(MessageType.sgmldeclaration),
+  xmldeclaration: messageCreator(MessageType.xmldeclaration),
   text: messageCreator(MessageType.text),
   opentag: messageCreator(MessageType.opentag),
   closetag: messageCreator(MessageType.closetag),

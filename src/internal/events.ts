@@ -4,6 +4,7 @@ export const EVENTS: EmitterEvent[] = [
   'text',
   'processinginstruction',
   'sgmldeclaration',
+  'xmldeclaration',
   'doctype',
   'comment',
   'opentag',

@@ -3,6 +3,7 @@ export type EmitterEvent =
   'text' |
   'processinginstruction' |
   'sgmldeclaration' |
+  'xmldeclaration' |
   'doctype' |
   'comment' |
   'opentag' |
@@ -96,6 +97,17 @@ export interface NSNode {
   uri: string
 }
 
+
+/**
+ * XML Declaration
+ * 
+ */
+export interface XmlDeclaration {
+  version: string
+  encoding?: string
+  standalone?: 'yes' | 'no'
+}
+
 /** 
  * Processing Instruction Node
  */
@@ -107,6 +119,7 @@ export interface PINode {
 export type EventData =
   string |
   XmlTag |
+  XmlDeclaration |
   QualifiedAttribute |
   AttributeNode |
   PINode |
