@@ -105,6 +105,8 @@ export class SAXParser {
    */
   onprocessinginstruction?: (node: PINode) => void;
 
+
+
   /**
    * a doctype event 
    * 
@@ -127,7 +129,8 @@ export class SAXParser {
   onsgmldeclaration?: (decl: string) => void;
 
   /**
-   * text node event 
+   * text node event
+   *  
    * 
    * may be called multiple times for the same block 
    * 
@@ -137,6 +140,7 @@ export class SAXParser {
 
   /**
    * open tag event
+   *  
    * 
    * complete with name, attribute list, and namespace if enabled 
    */
@@ -149,6 +153,7 @@ export class SAXParser {
 
   /**
    * start cdata event
+   *  
    * 
    * The opening tag of a `<![CDATA[` block.
    */
@@ -156,6 +161,7 @@ export class SAXParser {
 
   /**
    * text of a cdata block event
+   *  
    * 
    * may be called multiple times for the same block
    */
@@ -163,6 +169,7 @@ export class SAXParser {
 
   /**
    * end cdata event
+   *  
    * 
    * The closing tag `]]>` of a `<![CDATA[` ablock.
    */
