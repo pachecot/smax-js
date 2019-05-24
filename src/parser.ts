@@ -9,8 +9,8 @@ import { getPosition } from './internal/getPosition';
  * @param strict 
  * @param opt 
  */
-export const parser = function (strict?: boolean, opt?: SAXOptions) {
-  return new SAXParser(strict, opt)
+export const parser = function (opt?: SAXOptions) {
+  return new SAXParser(opt)
 }
 
 const chunkToString = Buffer && Buffer.isBuffer ?
@@ -27,14 +27,14 @@ export class SAXParser {
 
   _parser!: XmlParser
 
-  constructor(readonly strict: boolean = false, readonly opt: SAXOptions = {}) {
+  constructor(readonly opt: SAXOptions = {}) {
     this.open()
   }
 
   /** start a new file */
   open() {
     const emit = emitter(this)
-    this._parser = new XmlParser(emit, { ...this.opt, lenient: !this.strict })
+    this._parser = new XmlParser(emit, this.opt)
     emit('ready')
     return this
   }

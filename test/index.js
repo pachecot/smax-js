@@ -9,7 +9,7 @@ exports.sax = sax
 // otherwise, it's assumed that the test will write and close.
 exports.test = function test (options) {
   var xml = options.xml
-  var parser = sax.parser(options.strict, options.opt)
+  var parser = sax.parser({ ...(options.opt || {}), lenient: !options.strict })
   var expect = options.expect
   var e = 0
   sax.EVENTS.forEach(function (ev) {
