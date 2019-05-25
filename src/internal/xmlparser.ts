@@ -121,6 +121,7 @@ export class XmlParser implements Position {
   state_attr = STATE_ATTR.ATTRIB
   state_cdata = STATE_CDATA.CDATA
   state_doctype = STATE_DOCTYPE.DOCTYPE
+  state_pi = STATE_PI.PI
 
   tag: XmlTag = NULL_TAG
   error: Error | null = null
@@ -246,14 +247,19 @@ const enum STATE {
   /** <!-- blah --                          */ COMMENT_ENDED,
   /** <![CDATA[ something                   */ CDATA,
   /** <?hi                                  */ PROC_INST,
-  /** <?hi there                            */ PROC_INST_BODY,
-  /** <?hi "there" ?                        */ PROC_INST_ENDING,
   /** <strong                               */ OPEN_TAG,
   /** <strong /                             */ OPEN_TAG_SLASH,
   /** <a                                    */ ATTRIB,
   /** </a                                   */ CLOSE_TAG,
   /** </a   >                               */ CLOSE_TAG_SAW_WHITE,
 }
+
+const enum STATE_PI {
+  /** <?hi                                  */ PI,
+  /** <?hi there                            */ PI_BODY,
+  /** <?hi "there" ?                        */ PI_ENDING,
+}
+
 const enum STATE_DOCTYPE {
   /** <!DOCTYPE                             */ DOCTYPE,
   /** <!DOCTYPE "// blah                    */ DOCTYPE_QUOTED,
@@ -344,25 +350,33 @@ function write(context: XmlParser, chunk?: string) {
 
     switch (context.state) {
       case STATE.ATTRIB:
-        write_attr(context, cursor)
+        parse_attr(context, cursor)
         if (!context.c) {
           break
         }
         continue
 
       case STATE.CDATA:
-        write_cdata(context, cursor)
+        parse_cdata(context, cursor)
         if (!context.c) {
           break
         }
         continue
 
       case STATE.DOCTYPE:
-        write_doctype(context, cursor)
+        parse_doctype(context, cursor)
         if (!context.c) {
           break
         }
         continue
+
+      case STATE.PROC_INST:
+        parse_pi(context, cursor)
+        if (!context.c) {
+          break
+        }
+        continue
+
     }
 
     let c = context.c = cursor.nextChar()
@@ -505,51 +519,6 @@ function write(context: XmlParser, chunk?: string) {
         }
         break
 
-      case STATE.PROC_INST:
-        if (c === '?') {
-          context.state = STATE.PROC_INST_ENDING
-        } else if (isWhitespace(c)) {
-          context.state = STATE.PROC_INST_BODY
-        } else {
-          context.procInstName += c
-        }
-        break
-
-      case STATE.PROC_INST_BODY:
-        if (!context.procInstBody && isWhitespace(c)) {
-          break
-        } else if (c === '?') {
-          context.state = STATE.PROC_INST_ENDING
-        } else {
-          context.procInstBody += c
-        }
-        break
-
-      case STATE.PROC_INST_ENDING:
-        if (c === '>') {
-          if (context.procInstName.toUpperCase() == XML) {
-            if (context.sawRoot) {
-              strictFail(context, 'Inappropriately located xml declaration')
-            }
-            const xdec = parseXmlDeclaration(context.procInstBody)
-            if (xdec) {
-              emitNode(context, 'xmldeclaration', xdec)
-            } else {
-              strictFail(context, 'Invalid xml declaration')
-            }
-          } else {
-            emitNode(context, 'processinginstruction', {
-              name: context.procInstName,
-              body: context.procInstBody
-            })
-          }
-          context.procInstName = context.procInstBody = ''
-          context.state = STATE.TEXT
-        } else {
-          context.procInstBody += '?' + c
-          context.state = STATE.PROC_INST_BODY
-        }
-        break
 
       case STATE.OPEN_TAG:
         if (isMatch(nameBody, c)) {
@@ -639,7 +608,94 @@ function write(context: XmlParser, chunk?: string) {
   }
 }
 
-function write_doctype(context: XmlParser, cursor: Cursor) {
+// function parse_x(context: XmlParser, cursor: Cursor) {
+
+//   while (true) {
+//     let c = context.c = cursor.nextChar()
+
+//     if (!c) {
+//       break
+//     }
+
+//     switch (context.state) {
+//       default:
+//         throw new Error('Unknown state: ' + context.state)
+//     }
+
+//     if (context.state === STATE.TEXT) {
+//       break
+//     }
+//   } // while
+// }
+
+function parse_pi(context: XmlParser, cursor: Cursor) {
+
+  while (true) {
+    let c = context.c = cursor.nextChar()
+
+    if (!c) {
+      break
+    }
+
+    switch (context.state_pi) {
+      case STATE_PI.PI:
+        if (c === '?') {
+          context.state_pi = STATE_PI.PI_ENDING
+        } else if (isWhitespace(c)) {
+          context.state_pi = STATE_PI.PI_BODY
+        } else {
+          context.procInstName += c
+        }
+        break
+
+      case STATE_PI.PI_BODY:
+        if (!context.procInstBody && isWhitespace(c)) {
+          break
+        } else if (c === '?') {
+          context.state_pi = STATE_PI.PI_ENDING
+        } else {
+          context.procInstBody += c
+        }
+        break
+
+      case STATE_PI.PI_ENDING:
+        if (c === '>') {
+          if (context.procInstName.toUpperCase() == XML) {
+            if (context.sawRoot) {
+              strictFail(context, 'Inappropriately located xml declaration')
+            }
+            const xdec = parseXmlDeclaration(context.procInstBody)
+            if (xdec) {
+              emitNode(context, 'xmldeclaration', xdec)
+            } else {
+              strictFail(context, 'Invalid xml declaration')
+            }
+          } else {
+            emitNode(context, 'processinginstruction', {
+              name: context.procInstName,
+              body: context.procInstBody
+            })
+          }
+          context.procInstName = context.procInstBody = ''
+          context.state = STATE.TEXT
+        } else {
+          context.procInstBody += '?' + c
+          context.state_pi = STATE_PI.PI_BODY
+        }
+        break
+      default:
+        throw new Error('Unknown state: ' + context.state)
+    }
+
+    if (context.state === STATE.TEXT) {
+      context.state_pi = STATE_PI.PI
+      break
+    }
+  } // while
+}
+
+
+function parse_doctype(context: XmlParser, cursor: Cursor) {
 
   while (true) {
     let c = context.c = cursor.nextChar()
@@ -702,7 +758,8 @@ function write_doctype(context: XmlParser, cursor: Cursor) {
 }
 
 
-function write_cdata(context: XmlParser, cursor: Cursor) {
+
+function parse_cdata(context: XmlParser, cursor: Cursor) {
 
   while (true) {
     let c = context.c = cursor.nextChar()
@@ -755,7 +812,7 @@ function write_cdata(context: XmlParser, cursor: Cursor) {
   } // while
 }
 
-function write_attr(context: XmlParser, cursor: Cursor) {
+function parse_attr(context: XmlParser, cursor: Cursor) {
 
   while (true) {
     let c = context.c = cursor.nextChar()
