@@ -117,7 +117,7 @@ export class XmlParser implements Position {
   closedRoot = false
   sawRoot = false
   state = STATE.BEGIN
-  state_attr = ATTR_STATE.ATTRIB
+  state_attr = STATE_ATTR.ATTRIB
   tag: XmlTag = NULL_TAG
   error: Error | null = null
   ENTITIES: { [name: string]: string } = {}
@@ -256,7 +256,8 @@ enum STATE {
   /** </a   >                               */ CLOSE_TAG_SAW_WHITE,
 }
 
-enum ATTR_STATE {
+
+const enum STATE_ATTR {
   /** <a                                    */ ATTRIB,
   /** <a foo                                */ ATTRIB_NAME,
   /** <a foo _                              */ ATTRIB_NAME_SAW_WHITE,
@@ -591,7 +592,7 @@ function write(context: XmlParser, chunk?: string) {
               strictFail(context, 'Invalid character in tag name')
             }
             context.state = STATE.ATTRIB
-            context.state_attr = ATTR_STATE.ATTRIB
+            context.state_attr = STATE_ATTR.ATTRIB
           }
         }
         break
@@ -603,7 +604,7 @@ function write(context: XmlParser, chunk?: string) {
         } else {
           strictFail(context, 'Forward-slash in opening tag not followed by >')
           context.state = STATE.ATTRIB
-          context.state_attr = ATTR_STATE.ATTRIB
+          context.state_attr = STATE_ATTR.ATTRIB
         }
         break
 
@@ -729,7 +730,7 @@ function write_attr(context: XmlParser, cursor: Cursor) {
 
     switch (context.state_attr) {
 
-      case ATTR_STATE.ATTRIB:
+      case STATE_ATTR.ATTRIB:
         // haven't read the attribute name yet.
         if (isWhitespace(c)) {
           break
@@ -740,22 +741,22 @@ function write_attr(context: XmlParser, cursor: Cursor) {
         } else if (isMatch(nameStart, c)) {
           context.attribName = c
           context.attribValue = ''
-          context.state_attr = ATTR_STATE.ATTRIB_NAME
+          context.state_attr = STATE_ATTR.ATTRIB_NAME
         } else {
           strictFail(context, 'Invalid attribute name')
         }
         break
 
-      case ATTR_STATE.ATTRIB_NAME:
+      case STATE_ATTR.ATTRIB_NAME:
         if (c === '=') {
-          context.state_attr = ATTR_STATE.ATTRIB_VALUE
+          context.state_attr = STATE_ATTR.ATTRIB_VALUE
         } else if (c === '>') {
           strictFail(context, 'Attribute without value')
           context.attribValue = context.attribName
           attrib(context)
           openTag(context)
         } else if (isWhitespace(c)) {
-          context.state_attr = ATTR_STATE.ATTRIB_NAME_SAW_WHITE
+          context.state_attr = STATE_ATTR.ATTRIB_NAME_SAW_WHITE
         } else if (isMatch(nameBody, c)) {
           context.attribName += c
         } else {
@@ -763,9 +764,9 @@ function write_attr(context: XmlParser, cursor: Cursor) {
         }
         break
 
-      case ATTR_STATE.ATTRIB_NAME_SAW_WHITE:
+      case STATE_ATTR.ATTRIB_NAME_SAW_WHITE:
         if (c === '=') {
-          context.state_attr = ATTR_STATE.ATTRIB_VALUE
+          context.state_attr = STATE_ATTR.ATTRIB_VALUE
         } else if (isWhitespace(c)) {
           break
         } else {
@@ -777,31 +778,31 @@ function write_attr(context: XmlParser, cursor: Cursor) {
             openTag(context)
           } else if (isMatch(nameStart, c)) {
             context.attribName = c
-            context.state_attr = ATTR_STATE.ATTRIB_NAME
+            context.state_attr = STATE_ATTR.ATTRIB_NAME
           } else {
             strictFail(context, 'Invalid attribute name')
-            context.state_attr = ATTR_STATE.ATTRIB
+            context.state_attr = STATE_ATTR.ATTRIB
           }
         }
         break
 
-      case ATTR_STATE.ATTRIB_VALUE:
+      case STATE_ATTR.ATTRIB_VALUE:
         if (isWhitespace(c)) {
           break
         } else if (isQuote(c)) {
           context.q = c
-          context.state_attr = ATTR_STATE.ATTRIB_VALUE_QUOTED
+          context.state_attr = STATE_ATTR.ATTRIB_VALUE_QUOTED
         } else {
           strictFail(context, 'Unquoted attribute value')
-          context.state_attr = ATTR_STATE.ATTRIB_VALUE_UNQUOTED
+          context.state_attr = STATE_ATTR.ATTRIB_VALUE_UNQUOTED
           context.attribValue = c
         }
         break
 
-      case ATTR_STATE.ATTRIB_VALUE_QUOTED:
+      case STATE_ATTR.ATTRIB_VALUE_QUOTED:
         if (c !== context.q) {
           if (c === '&') {
-            context.state_attr = ATTR_STATE.ATTRIB_VALUE_ENTITY_Q
+            context.state_attr = STATE_ATTR.ATTRIB_VALUE_ENTITY_Q
           } else {
             context.attribValue += c
           }
@@ -809,12 +810,12 @@ function write_attr(context: XmlParser, cursor: Cursor) {
         }
         attrib(context)
         context.q = ''
-        context.state_attr = ATTR_STATE.ATTRIB_VALUE_CLOSED
+        context.state_attr = STATE_ATTR.ATTRIB_VALUE_CLOSED
         break
 
-      case ATTR_STATE.ATTRIB_VALUE_CLOSED:
+      case STATE_ATTR.ATTRIB_VALUE_CLOSED:
         if (isWhitespace(c)) {
-          context.state_attr = ATTR_STATE.ATTRIB
+          context.state_attr = STATE_ATTR.ATTRIB
         } else if (c === '>') {
           openTag(context)
         } else if (c === '/') {
@@ -823,16 +824,16 @@ function write_attr(context: XmlParser, cursor: Cursor) {
           strictFail(context, 'No whitespace between attributes')
           context.attribName = c
           context.attribValue = ''
-          context.state_attr = ATTR_STATE.ATTRIB_NAME
+          context.state_attr = STATE_ATTR.ATTRIB_NAME
         } else {
           strictFail(context, 'Invalid attribute name')
         }
         break
 
-      case ATTR_STATE.ATTRIB_VALUE_UNQUOTED:
+      case STATE_ATTR.ATTRIB_VALUE_UNQUOTED:
         if (!isAttribEnd(c)) {
           if (c === '&') {
-            context.state_attr = ATTR_STATE.ATTRIB_VALUE_ENTITY_U
+            context.state_attr = STATE_ATTR.ATTRIB_VALUE_ENTITY_U
           } else {
             context.attribValue += c
           }
@@ -842,21 +843,21 @@ function write_attr(context: XmlParser, cursor: Cursor) {
         if (c === '>') {
           openTag(context)
         } else {
-          context.state_attr = ATTR_STATE.ATTRIB
+          context.state_attr = STATE_ATTR.ATTRIB
         }
         break
 
-      case ATTR_STATE.ATTRIB_VALUE_ENTITY_Q:
-      case ATTR_STATE.ATTRIB_VALUE_ENTITY_U:
+      case STATE_ATTR.ATTRIB_VALUE_ENTITY_Q:
+      case STATE_ATTR.ATTRIB_VALUE_ENTITY_U:
 
         const returnState = {
-          [ATTR_STATE.ATTRIB_VALUE_ENTITY_Q]: ATTR_STATE.ATTRIB_VALUE_QUOTED,
-          [ATTR_STATE.ATTRIB_VALUE_ENTITY_U]: ATTR_STATE.ATTRIB_VALUE_UNQUOTED,
+          [STATE_ATTR.ATTRIB_VALUE_ENTITY_Q]: STATE_ATTR.ATTRIB_VALUE_QUOTED,
+          [STATE_ATTR.ATTRIB_VALUE_ENTITY_U]: STATE_ATTR.ATTRIB_VALUE_UNQUOTED,
         }[context.state_attr]
 
         const buffer = {
-          [ATTR_STATE.ATTRIB_VALUE_ENTITY_Q]: 'attribValue',
-          [ATTR_STATE.ATTRIB_VALUE_ENTITY_U]: 'attribValue',
+          [STATE_ATTR.ATTRIB_VALUE_ENTITY_Q]: 'attribValue',
+          [STATE_ATTR.ATTRIB_VALUE_ENTITY_U]: 'attribValue',
         }[context.state_attr]
 
         if (c === ';') {
@@ -879,7 +880,7 @@ function write_attr(context: XmlParser, cursor: Cursor) {
     }
 
     if (context.state !== STATE.ATTRIB) {
-      context.state_attr = ATTR_STATE.ATTRIB
+      context.state_attr = STATE_ATTR.ATTRIB
       break
     }
   } // while
