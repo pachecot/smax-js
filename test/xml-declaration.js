@@ -36,6 +36,31 @@ require(__dirname).test({
 })
 
 require(__dirname).test({
+  xml: `<!-- comment -->
+<?xml version="1.0" encoding="UTF-8" ?>`,
+  expect: [
+    [
+      'comment',
+      ' comment '
+    ],
+    [
+      'text',
+      '\n'
+    ],
+    ['error', 'Inappropriately located xml declaration\nLine: 1\nColumn: 39\nChar: >'],
+    [
+      'xmldeclaration',
+      {
+        version: '1.0',
+        encoding: 'UTF-8'
+      }
+    ]
+  ],
+  strict: true,
+  opt: {}
+})
+
+require(__dirname).test({
   xml: `<?xml version="1.0" encoding="UTF-8" ?>
 
 <table><tr><td>Apples</td><td>Bananas</td></tr></table>`,

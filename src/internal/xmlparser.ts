@@ -125,6 +125,7 @@ export class XmlParser implements Position {
   startTagPosition: number = 0
 
   tagid = 0
+  id = 0
 
   // namespaces form a prototype chain.
   // it always points at the current tag,
@@ -262,13 +263,21 @@ function emitNode(context: XmlParser, nodeType: EmitterEvent, data?: EventData) 
   if (context.textNode) {
     closeText(context)
   }
+  if (nodeType === 'xmldeclaration' && context.id > 0) {
+    strictFail(context, 'Inappropriately located xml declaration')
+  }
   context.emit(nodeType, data)
+  if (nodeType !== 'error') {
+    context.id++
+  }
 }
+
 
 function closeText(context: XmlParser) {
   context.textNode = textopts(context.opt, context.textNode)
   if (context.textNode) {
     context.emit('text', context.textNode)
+    context.id++
   }
   context.textNode = ''
 }
