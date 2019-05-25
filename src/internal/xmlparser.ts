@@ -117,6 +117,7 @@ export class XmlParser implements Position {
   closedRoot = false
   sawRoot = false
   state = STATE.BEGIN
+  state_attr = ATTR_STATE.ATTRIB
   tag: XmlTag = NULL_TAG
   error: Error | null = null
   ENTITIES: { [name: string]: string } = {}
@@ -251,6 +252,12 @@ enum STATE {
   /** <strong                               */ OPEN_TAG,
   /** <strong /                             */ OPEN_TAG_SLASH,
   /** <a                                    */ ATTRIB,
+  /** </a                                   */ CLOSE_TAG,
+  /** </a   >                               */ CLOSE_TAG_SAW_WHITE,
+}
+
+enum ATTR_STATE {
+  /** <a                                    */ ATTRIB,
   /** <a foo                                */ ATTRIB_NAME,
   /** <a foo _                              */ ATTRIB_NAME_SAW_WHITE,
   /** <a foo=                               */ ATTRIB_VALUE,
@@ -259,8 +266,6 @@ enum STATE {
   /** <a foo=bar                            */ ATTRIB_VALUE_UNQUOTED,
   /** <foo bar="&quot;"                     */ ATTRIB_VALUE_ENTITY_Q,
   /** <foo bar=&quot                        */ ATTRIB_VALUE_ENTITY_U,
-  /** </a                                   */ CLOSE_TAG,
-  /** </a   >                               */ CLOSE_TAG_SAW_WHITE,
 }
 
 
@@ -287,15 +292,25 @@ function closeText(context: XmlParser) {
   context.textNode = ''
 }
 
-function moveNext(context: XmlParser, c: string) {
-  if (c && context.trackPosition) {
-    context.position++
-    if (c === '\n') {
-      context.line++
-      context.column = 0
-    } else {
-      context.column++
+function moveNext(context: Position, c: string) {
+  context.position++
+  if (c === '\n') {
+    context.line++
+    context.column = 0
+  } else {
+    context.column++
+  }
+}
+
+class Cursor {
+  offset = 0
+  constructor(readonly chunk: string, readonly track: boolean, readonly pos: Position) { }
+  nextChar() {
+    const c = charAt(this.chunk, this.offset++)
+    if (this.track && c) {
+      moveNext(this.pos, c)
     }
+    return c
   }
 }
 
@@ -311,38 +326,44 @@ function write(context: XmlParser, chunk?: string) {
     end(context)
     return;
   }
-  let i = 0
-  while (true) {
-    let c = charAt(chunk, i++)
-    context.c = c
 
+  let cursor = new Cursor(chunk, context.trackPosition, context)
+
+  while (true) {
+
+    if (context.state === STATE.ATTRIB) {
+      write_attr(context, cursor)
+      if (!context.c) {
+        break
+      }
+      continue
+    }
+
+    let c = context.c = cursor.nextChar()
     if (!c) {
       break
     }
-
-    if (context.trackPosition) { moveNext(context, c) }
 
     switch (context.state) {
       case STATE.BEGIN:
         context.state = STATE.BEGIN_WHITESPACE
         if (c === '\uFEFF') {
-          continue
+          break
         }
         beginWhiteSpace(context, c)
-        continue
+        break
 
       case STATE.BEGIN_WHITESPACE:
         beginWhiteSpace(context, c)
-        continue
+        break
 
       case STATE.TEXT:
         if (context.sawRoot && !context.closedRoot) {
-          const starti = i - 1
+          const starti = cursor.offset - 1
           while (c && c !== '<' && c !== '&') {
-            c = charAt(chunk, i++)
-            if (c && context.trackPosition) { moveNext(context, c) }
+            c = cursor.nextChar()
           }
-          context.textNode += chunk.substring(starti, i - 1)
+          context.textNode += chunk.substring(starti, cursor.offset - 1)
         }
         if (c === '<' && !(context.sawRoot && context.closedRoot && context.lenient)) {
           context.state = STATE.OPEN_WAKA
@@ -357,7 +378,7 @@ function write(context: XmlParser, chunk?: string) {
             context.textNode += c
           }
         }
-        continue
+        break
 
       case STATE.OPEN_WAKA:
         // either a /, ?, !, or text is coming next.
@@ -385,7 +406,7 @@ function write(context: XmlParser, chunk?: string) {
           context.textNode += '<' + c
           context.state = STATE.TEXT
         }
-        continue
+        break
 
       case STATE.SGML_DECL:
         if ((context.sgmlDecl + c).toUpperCase() === CDATA) {
@@ -414,7 +435,7 @@ function write(context: XmlParser, chunk?: string) {
         } else {
           context.sgmlDecl += c
         }
-        continue
+        break
 
       case STATE.SGML_DECL_QUOTED:
         if (c === context.q) {
@@ -422,7 +443,7 @@ function write(context: XmlParser, chunk?: string) {
           context.q = ''
         }
         context.sgmlDecl += c
-        continue
+        break
 
       case STATE.DOCTYPE:
         if (c === '>') {
@@ -438,7 +459,7 @@ function write(context: XmlParser, chunk?: string) {
             context.q = c
           }
         }
-        continue
+        break
 
       case STATE.DOCTYPE_QUOTED:
         context.doctype += c
@@ -446,7 +467,7 @@ function write(context: XmlParser, chunk?: string) {
           context.q = ''
           context.state = STATE.DOCTYPE
         }
-        continue
+        break
 
       case STATE.DOCTYPE_DTD:
         context.doctype += c
@@ -456,7 +477,7 @@ function write(context: XmlParser, chunk?: string) {
           context.state = STATE.DOCTYPE_DTD_QUOTED
           context.q = c
         }
-        continue
+        break
 
       case STATE.DOCTYPE_DTD_QUOTED:
         context.doctype += c
@@ -464,7 +485,7 @@ function write(context: XmlParser, chunk?: string) {
           context.state = STATE.DOCTYPE_DTD
           context.q = ''
         }
-        continue
+        break
 
       case STATE.COMMENT:
         if (c === '-') {
@@ -472,7 +493,7 @@ function write(context: XmlParser, chunk?: string) {
         } else {
           context.comment += c
         }
-        continue
+        break
 
       case STATE.COMMENT_ENDING:
         if (c === '-') {
@@ -486,7 +507,7 @@ function write(context: XmlParser, chunk?: string) {
           context.comment += '-' + c
           context.state = STATE.COMMENT
         }
-        continue
+        break
 
       case STATE.COMMENT_ENDED:
         if (c !== '>') {
@@ -498,7 +519,7 @@ function write(context: XmlParser, chunk?: string) {
         } else {
           context.state = STATE.TEXT
         }
-        continue
+        break
 
       case STATE.CDATA:
         if (c === ']') {
@@ -506,7 +527,7 @@ function write(context: XmlParser, chunk?: string) {
         } else {
           context.cdata += c
         }
-        continue
+        break
 
       case STATE.CDATA_ENDING:
         if (c === ']') {
@@ -515,7 +536,7 @@ function write(context: XmlParser, chunk?: string) {
           context.cdata += ']' + c
           context.state = STATE.CDATA
         }
-        continue
+        break
 
       case STATE.CDATA_ENDING_2:
         if (c === '>') {
@@ -531,7 +552,7 @@ function write(context: XmlParser, chunk?: string) {
           context.cdata += ']]' + c
           context.state = STATE.CDATA
         }
-        continue
+        break
 
       case STATE.PROC_INST:
         if (c === '?') {
@@ -541,17 +562,17 @@ function write(context: XmlParser, chunk?: string) {
         } else {
           context.procInstName += c
         }
-        continue
+        break
 
       case STATE.PROC_INST_BODY:
         if (!context.procInstBody && isWhitespace(c)) {
-          continue
+          break
         } else if (c === '?') {
           context.state = STATE.PROC_INST_ENDING
         } else {
           context.procInstBody += c
         }
-        continue
+        break
 
       case STATE.PROC_INST_ENDING:
         if (c === '>') {
@@ -577,7 +598,7 @@ function write(context: XmlParser, chunk?: string) {
           context.procInstBody += '?' + c
           context.state = STATE.PROC_INST_BODY
         }
-        continue
+        break
 
       case STATE.OPEN_TAG:
         if (isMatch(nameBody, c)) {
@@ -593,9 +614,10 @@ function write(context: XmlParser, chunk?: string) {
               strictFail(context, 'Invalid character in tag name')
             }
             context.state = STATE.ATTRIB
+            context.state_attr = ATTR_STATE.ATTRIB
           }
         }
-        continue
+        break
 
       case STATE.OPEN_TAG_SLASH:
         if (c === '>') {
@@ -604,130 +626,14 @@ function write(context: XmlParser, chunk?: string) {
         } else {
           strictFail(context, 'Forward-slash in opening tag not followed by >')
           context.state = STATE.ATTRIB
+          context.state_attr = ATTR_STATE.ATTRIB
         }
-        continue
-
-      case STATE.ATTRIB:
-        // haven't read the attribute name yet.
-        if (isWhitespace(c)) {
-          continue
-        } else if (c === '>') {
-          openTag(context)
-        } else if (c === '/') {
-          context.state = STATE.OPEN_TAG_SLASH
-        } else if (isMatch(nameStart, c)) {
-          context.attribName = c
-          context.attribValue = ''
-          context.state = STATE.ATTRIB_NAME
-        } else {
-          strictFail(context, 'Invalid attribute name')
-        }
-        continue
-
-      case STATE.ATTRIB_NAME:
-        if (c === '=') {
-          context.state = STATE.ATTRIB_VALUE
-        } else if (c === '>') {
-          strictFail(context, 'Attribute without value')
-          context.attribValue = context.attribName
-          attrib(context)
-          openTag(context)
-        } else if (isWhitespace(c)) {
-          context.state = STATE.ATTRIB_NAME_SAW_WHITE
-        } else if (isMatch(nameBody, c)) {
-          context.attribName += c
-        } else {
-          strictFail(context, 'Invalid attribute name')
-        }
-        continue
-
-      case STATE.ATTRIB_NAME_SAW_WHITE:
-        if (c === '=') {
-          context.state = STATE.ATTRIB_VALUE
-        } else if (isWhitespace(c)) {
-          continue
-        } else {
-          strictFail(context, 'Attribute without value')
-          context.attribList.push([context.attribName, ''])
-          context.attribValue = ''
-          context.attribName = ''
-          if (c === '>') {
-            openTag(context)
-          } else if (isMatch(nameStart, c)) {
-            context.attribName = c
-            context.state = STATE.ATTRIB_NAME
-          } else {
-            strictFail(context, 'Invalid attribute name')
-            context.state = STATE.ATTRIB
-          }
-        }
-        continue
-
-      case STATE.ATTRIB_VALUE:
-        if (isWhitespace(c)) {
-          continue
-        } else if (isQuote(c)) {
-          context.q = c
-          context.state = STATE.ATTRIB_VALUE_QUOTED
-        } else {
-          strictFail(context, 'Unquoted attribute value')
-          context.state = STATE.ATTRIB_VALUE_UNQUOTED
-          context.attribValue = c
-        }
-        continue
-
-      case STATE.ATTRIB_VALUE_QUOTED:
-        if (c !== context.q) {
-          if (c === '&') {
-            context.state = STATE.ATTRIB_VALUE_ENTITY_Q
-          } else {
-            context.attribValue += c
-          }
-          continue
-        }
-        attrib(context)
-        context.q = ''
-        context.state = STATE.ATTRIB_VALUE_CLOSED
-        continue
-
-      case STATE.ATTRIB_VALUE_CLOSED:
-        if (isWhitespace(c)) {
-          context.state = STATE.ATTRIB
-        } else if (c === '>') {
-          openTag(context)
-        } else if (c === '/') {
-          context.state = STATE.OPEN_TAG_SLASH
-        } else if (isMatch(nameStart, c)) {
-          strictFail(context, 'No whitespace between attributes')
-          context.attribName = c
-          context.attribValue = ''
-          context.state = STATE.ATTRIB_NAME
-        } else {
-          strictFail(context, 'Invalid attribute name')
-        }
-        continue
-
-      case STATE.ATTRIB_VALUE_UNQUOTED:
-        if (!isAttribEnd(c)) {
-          if (c === '&') {
-            context.state = STATE.ATTRIB_VALUE_ENTITY_U
-          } else {
-            context.attribValue += c
-          }
-          continue
-        }
-        attrib(context)
-        if (c === '>') {
-          openTag(context)
-        } else {
-          context.state = STATE.ATTRIB
-        }
-        continue
+        break
 
       case STATE.CLOSE_TAG:
         if (!context.tagName) {
           if (isWhitespace(c)) {
-            continue
+            break
           } else if (notMatch(nameStart, c)) {
             strictFail(context, 'Invalid tagname in closing tag.')
           } else {
@@ -743,52 +649,209 @@ function write(context: XmlParser, chunk?: string) {
           }
           context.state = STATE.CLOSE_TAG_SAW_WHITE
         }
-        continue
+        break
 
       case STATE.CLOSE_TAG_SAW_WHITE:
         if (isWhitespace(c)) {
-          continue
+          break
         }
         if (c === '>') {
           closeTag(context)
         } else {
           strictFail(context, 'Invalid characters in closing tag')
         }
-        continue
+        break
 
       case STATE.TEXT_ENTITY:
-      case STATE.ATTRIB_VALUE_ENTITY_Q:
-      case STATE.ATTRIB_VALUE_ENTITY_U:
+
+        if (c === ';') {
+          context.textNode += parseEntity(context)
+          context.entity = ''
+          context.state = STATE.TEXT
+        } else if (isMatch(context.entity.length ? entityBody : entityStart, c)) {
+          context.entity += c
+        } else {
+          strictFail(context, 'Invalid character in entity name')
+          context.textNode += '&' + context.entity + c
+          context.entity = ''
+          context.state = STATE.TEXT
+        }
+        break
+
+      default:
+        throw new Error('Unknown state: ' + context.state)
+    }
+  } // while
+
+  if (context.position >= context.bufferCheckPosition) {
+    checkBufferLength(context)
+  }
+}
+
+
+function write_attr(context: XmlParser, cursor: Cursor) {
+
+  while (true) {
+    let c = context.c = cursor.nextChar()
+
+    if (!c) {
+      break
+    }
+
+    switch (context.state_attr) {
+
+      case ATTR_STATE.ATTRIB:
+        // haven't read the attribute name yet.
+        if (isWhitespace(c)) {
+          break
+        } else if (c === '>') {
+          openTag(context)
+        } else if (c === '/') {
+          context.state = STATE.OPEN_TAG_SLASH
+        } else if (isMatch(nameStart, c)) {
+          context.attribName = c
+          context.attribValue = ''
+          context.state_attr = ATTR_STATE.ATTRIB_NAME
+        } else {
+          strictFail(context, 'Invalid attribute name')
+        }
+        break
+
+      case ATTR_STATE.ATTRIB_NAME:
+        if (c === '=') {
+          context.state_attr = ATTR_STATE.ATTRIB_VALUE
+        } else if (c === '>') {
+          strictFail(context, 'Attribute without value')
+          context.attribValue = context.attribName
+          attrib(context)
+          openTag(context)
+        } else if (isWhitespace(c)) {
+          context.state_attr = ATTR_STATE.ATTRIB_NAME_SAW_WHITE
+        } else if (isMatch(nameBody, c)) {
+          context.attribName += c
+        } else {
+          strictFail(context, 'Invalid attribute name')
+        }
+        break
+
+      case ATTR_STATE.ATTRIB_NAME_SAW_WHITE:
+        if (c === '=') {
+          context.state_attr = ATTR_STATE.ATTRIB_VALUE
+        } else if (isWhitespace(c)) {
+          break
+        } else {
+          strictFail(context, 'Attribute without value')
+          context.attribList.push([context.attribName, ''])
+          context.attribValue = ''
+          context.attribName = ''
+          if (c === '>') {
+            openTag(context)
+          } else if (isMatch(nameStart, c)) {
+            context.attribName = c
+            context.state_attr = ATTR_STATE.ATTRIB_NAME
+          } else {
+            strictFail(context, 'Invalid attribute name')
+            context.state_attr = ATTR_STATE.ATTRIB
+          }
+        }
+        break
+
+      case ATTR_STATE.ATTRIB_VALUE:
+        if (isWhitespace(c)) {
+          break
+        } else if (isQuote(c)) {
+          context.q = c
+          context.state_attr = ATTR_STATE.ATTRIB_VALUE_QUOTED
+        } else {
+          strictFail(context, 'Unquoted attribute value')
+          context.state_attr = ATTR_STATE.ATTRIB_VALUE_UNQUOTED
+          context.attribValue = c
+        }
+        break
+
+      case ATTR_STATE.ATTRIB_VALUE_QUOTED:
+        if (c !== context.q) {
+          if (c === '&') {
+            context.state_attr = ATTR_STATE.ATTRIB_VALUE_ENTITY_Q
+          } else {
+            context.attribValue += c
+          }
+          break
+        }
+        attrib(context)
+        context.q = ''
+        context.state_attr = ATTR_STATE.ATTRIB_VALUE_CLOSED
+        break
+
+      case ATTR_STATE.ATTRIB_VALUE_CLOSED:
+        if (isWhitespace(c)) {
+          context.state_attr = ATTR_STATE.ATTRIB
+        } else if (c === '>') {
+          openTag(context)
+        } else if (c === '/') {
+          context.state = STATE.OPEN_TAG_SLASH
+        } else if (isMatch(nameStart, c)) {
+          strictFail(context, 'No whitespace between attributes')
+          context.attribName = c
+          context.attribValue = ''
+          context.state_attr = ATTR_STATE.ATTRIB_NAME
+        } else {
+          strictFail(context, 'Invalid attribute name')
+        }
+        break
+
+      case ATTR_STATE.ATTRIB_VALUE_UNQUOTED:
+        if (!isAttribEnd(c)) {
+          if (c === '&') {
+            context.state_attr = ATTR_STATE.ATTRIB_VALUE_ENTITY_U
+          } else {
+            context.attribValue += c
+          }
+          break
+        }
+        attrib(context)
+        if (c === '>') {
+          openTag(context)
+        } else {
+          context.state_attr = ATTR_STATE.ATTRIB
+        }
+        break
+
+      case ATTR_STATE.ATTRIB_VALUE_ENTITY_Q:
+      case ATTR_STATE.ATTRIB_VALUE_ENTITY_U:
 
         const returnState = {
-          [STATE.TEXT_ENTITY]: STATE.TEXT,
-          [STATE.ATTRIB_VALUE_ENTITY_Q]: STATE.ATTRIB_VALUE_QUOTED,
-          [STATE.ATTRIB_VALUE_ENTITY_U]: STATE.ATTRIB_VALUE_UNQUOTED,
-        }[context.state]
+          [ATTR_STATE.ATTRIB_VALUE_ENTITY_Q]: ATTR_STATE.ATTRIB_VALUE_QUOTED,
+          [ATTR_STATE.ATTRIB_VALUE_ENTITY_U]: ATTR_STATE.ATTRIB_VALUE_UNQUOTED,
+        }[context.state_attr]
 
         const buffer = {
-          [STATE.TEXT_ENTITY]: 'textNode',
-          [STATE.ATTRIB_VALUE_ENTITY_Q]: 'attribValue',
-          [STATE.ATTRIB_VALUE_ENTITY_U]: 'attribValue',
-        }[context.state]
+          [ATTR_STATE.ATTRIB_VALUE_ENTITY_Q]: 'attribValue',
+          [ATTR_STATE.ATTRIB_VALUE_ENTITY_U]: 'attribValue',
+        }[context.state_attr]
 
         if (c === ';') {
           context[buffer] += parseEntity(context)
           context.entity = ''
-          context.state = returnState
+          context.state_attr = returnState
         } else if (isMatch(context.entity.length ? entityBody : entityStart, c)) {
           context.entity += c
         } else {
           strictFail(context, 'Invalid character in entity name')
           context[buffer] += '&' + context.entity + c
           context.entity = ''
-          context.state = returnState
+          context.state_attr = returnState
         }
 
-        continue
+        break
 
       default:
         throw new Error('Unknown state: ' + context.state)
+    }
+
+    if (context.state !== STATE.ATTRIB) {
+      context.state_attr = ATTR_STATE.ATTRIB
+      break
     }
   } // while
 
