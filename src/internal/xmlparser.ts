@@ -120,6 +120,7 @@ export class XmlParser implements Position {
   state = STATE.BEGIN
   state_attr = STATE_ATTR.ATTRIB
   state_cdata = STATE_CDATA.CDATA
+  state_doctype = STATE_DOCTYPE.DOCTYPE
 
   tag: XmlTag = NULL_TAG
   error: Error | null = null
@@ -239,9 +240,6 @@ const enum STATE {
   /** <!BLARG                               */ SGML_DECL,
   /** <!BLARG foo "bar                      */ SGML_DECL_QUOTED,
   /** <!DOCTYPE                             */ DOCTYPE,
-  /** <!DOCTYPE "// blah                    */ DOCTYPE_QUOTED,
-  /** <!DOCTYPE "// blah" [ ...             */ DOCTYPE_DTD,
-  /** <!DOCTYPE "// blah" [ "foo            */ DOCTYPE_DTD_QUOTED,
   /** <!-                                   */ COMMENT_STARTING,
   /** <!--                                  */ COMMENT,
   /** <!-- blah -                           */ COMMENT_ENDING,
@@ -255,6 +253,12 @@ const enum STATE {
   /** <a                                    */ ATTRIB,
   /** </a                                   */ CLOSE_TAG,
   /** </a   >                               */ CLOSE_TAG_SAW_WHITE,
+}
+const enum STATE_DOCTYPE {
+  /** <!DOCTYPE                             */ DOCTYPE,
+  /** <!DOCTYPE "// blah                    */ DOCTYPE_QUOTED,
+  /** <!DOCTYPE "// blah" [ ...             */ DOCTYPE_DTD,
+  /** <!DOCTYPE "// blah" [ "foo            */ DOCTYPE_DTD_QUOTED,
 }
 
 const enum STATE_CDATA {
@@ -348,6 +352,13 @@ function write(context: XmlParser, chunk?: string) {
 
       case STATE.CDATA:
         write_cdata(context, cursor)
+        if (!context.c) {
+          break
+        }
+        continue
+
+      case STATE.DOCTYPE:
+        write_doctype(context, cursor)
         if (!context.c) {
           break
         }
@@ -458,48 +469,6 @@ function write(context: XmlParser, chunk?: string) {
           context.q = ''
         }
         context.sgmlDecl += c
-        break
-
-      case STATE.DOCTYPE:
-        if (c === '>') {
-          context.state = STATE.TEXT
-          emitNode(context, 'doctype', context.doctype)
-          context.doctype = 'true' // just remember that we saw it.
-        } else {
-          context.doctype += c
-          if (c === '[') {
-            context.state = STATE.DOCTYPE_DTD
-          } else if (isQuote(c)) {
-            context.state = STATE.DOCTYPE_QUOTED
-            context.q = c
-          }
-        }
-        break
-
-      case STATE.DOCTYPE_QUOTED:
-        context.doctype += c
-        if (c === context.q) {
-          context.q = ''
-          context.state = STATE.DOCTYPE
-        }
-        break
-
-      case STATE.DOCTYPE_DTD:
-        context.doctype += c
-        if (c === ']') {
-          context.state = STATE.DOCTYPE
-        } else if (isQuote(c)) {
-          context.state = STATE.DOCTYPE_DTD_QUOTED
-          context.q = c
-        }
-        break
-
-      case STATE.DOCTYPE_DTD_QUOTED:
-        context.doctype += c
-        if (c === context.q) {
-          context.state = STATE.DOCTYPE_DTD
-          context.q = ''
-        }
         break
 
       case STATE.COMMENT:
@@ -669,6 +638,69 @@ function write(context: XmlParser, chunk?: string) {
     checkBufferLength(context)
   }
 }
+
+function write_doctype(context: XmlParser, cursor: Cursor) {
+
+  while (true) {
+    let c = context.c = cursor.nextChar()
+
+    if (!c) {
+      break
+    }
+
+    switch (context.state_doctype) {
+      case STATE_DOCTYPE.DOCTYPE:
+        if (c === '>') {
+          context.state = STATE.TEXT
+          emitNode(context, 'doctype', context.doctype)
+          context.doctype = 'true' // just remember that we saw it.
+        } else {
+          context.doctype += c
+          if (c === '[') {
+            context.state_doctype = STATE_DOCTYPE.DOCTYPE_DTD
+          } else if (isQuote(c)) {
+            context.state_doctype = STATE_DOCTYPE.DOCTYPE_QUOTED
+            context.q = c
+          }
+        }
+        break
+
+      case STATE_DOCTYPE.DOCTYPE_QUOTED:
+        context.doctype += c
+        if (c === context.q) {
+          context.q = ''
+          context.state_doctype = STATE_DOCTYPE.DOCTYPE
+        }
+        break
+
+      case STATE_DOCTYPE.DOCTYPE_DTD:
+        context.doctype += c
+        if (c === ']') {
+          context.state_doctype = STATE_DOCTYPE.DOCTYPE
+        } else if (isQuote(c)) {
+          context.state_doctype = STATE_DOCTYPE.DOCTYPE_DTD_QUOTED
+          context.q = c
+        }
+        break
+
+      case STATE_DOCTYPE.DOCTYPE_DTD_QUOTED:
+        context.doctype += c
+        if (c === context.q) {
+          context.state_doctype = STATE_DOCTYPE.DOCTYPE_DTD
+          context.q = ''
+        }
+        break
+
+      default:
+        throw new Error('Unknown state: ' + context.state)
+    }
+
+    if (context.state === STATE.TEXT) {
+      break
+    }
+  } // while
+}
+
 
 function write_cdata(context: XmlParser, cursor: Cursor) {
 
