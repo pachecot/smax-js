@@ -122,6 +122,7 @@ export class XmlParser implements Position {
   state_cdata = STATE_CDATA.CDATA
   state_doctype = STATE_DOCTYPE.DOCTYPE
   state_pi = STATE_PI.PI
+  state_comment = STATE_COMMENT.COMMENT
 
   tag: XmlTag = NULL_TAG
   error: Error | null = null
@@ -241,10 +242,7 @@ const enum STATE {
   /** <!BLARG                               */ SGML_DECL,
   /** <!BLARG foo "bar                      */ SGML_DECL_QUOTED,
   /** <!DOCTYPE                             */ DOCTYPE,
-  /** <!-                                   */ COMMENT_STARTING,
   /** <!--                                  */ COMMENT,
-  /** <!-- blah -                           */ COMMENT_ENDING,
-  /** <!-- blah --                          */ COMMENT_ENDED,
   /** <![CDATA[ something                   */ CDATA,
   /** <?hi                                  */ PROC_INST,
   /** <strong                               */ OPEN_TAG,
@@ -252,6 +250,13 @@ const enum STATE {
   /** <a                                    */ ATTRIB,
   /** </a                                   */ CLOSE_TAG,
   /** </a   >                               */ CLOSE_TAG_SAW_WHITE,
+}
+
+const enum STATE_COMMENT {
+  /** <!-                                   */ COMMENT_STARTING,
+  /** <!--                                  */ COMMENT,
+  /** <!-- blah -                           */ COMMENT_ENDING,
+  /** <!-- blah --                          */ COMMENT_ENDED,
 }
 
 const enum STATE_PI {
@@ -377,6 +382,13 @@ function write(context: XmlParser, chunk?: string) {
         }
         continue
 
+      case STATE.COMMENT:
+        parse_comment(context, cursor)
+        if (!context.c) {
+          break
+        }
+        continue
+
     }
 
     let c = context.c = cursor.nextChar()
@@ -485,41 +497,6 @@ function write(context: XmlParser, chunk?: string) {
         context.sgmlDecl += c
         break
 
-      case STATE.COMMENT:
-        if (c === '-') {
-          context.state = STATE.COMMENT_ENDING
-        } else {
-          context.comment += c
-        }
-        break
-
-      case STATE.COMMENT_ENDING:
-        if (c === '-') {
-          context.state = STATE.COMMENT_ENDED
-          context.comment = textopts(context.opt, context.comment)
-          if (context.comment) {
-            emitNode(context, 'comment', context.comment)
-          }
-          context.comment = ''
-        } else {
-          context.comment += '-' + c
-          context.state = STATE.COMMENT
-        }
-        break
-
-      case STATE.COMMENT_ENDED:
-        if (c !== '>') {
-          strictFail(context, 'Malformed comment')
-          // allow <!-- blah -- bloo --> in non-strict mode,
-          // which is a comment of " blah -- bloo "
-          context.comment += '--' + c
-          context.state = STATE.COMMENT
-        } else {
-          context.state = STATE.TEXT
-        }
-        break
-
-
       case STATE.OPEN_TAG:
         if (isMatch(nameBody, c)) {
           context.tagName += c
@@ -627,6 +604,60 @@ function write(context: XmlParser, chunk?: string) {
 //     }
 //   } // while
 // }
+
+function parse_comment(context: XmlParser, cursor: Cursor) {
+
+  while (true) {
+    let c = context.c = cursor.nextChar()
+
+    if (!c) {
+      break
+    }
+
+    switch (context.state_comment) {
+      case STATE_COMMENT.COMMENT:
+        if (c === '-') {
+          context.state_comment = STATE_COMMENT.COMMENT_ENDING
+        } else {
+          context.comment += c
+        }
+        break
+
+      case STATE_COMMENT.COMMENT_ENDING:
+        if (c === '-') {
+          context.state_comment = STATE_COMMENT.COMMENT_ENDED
+          context.comment = textopts(context.opt, context.comment)
+          if (context.comment) {
+            emitNode(context, 'comment', context.comment)
+          }
+          context.comment = ''
+        } else {
+          context.comment += '-' + c
+          context.state_comment = STATE_COMMENT.COMMENT
+        }
+        break
+
+      case STATE_COMMENT.COMMENT_ENDED:
+        if (c !== '>') {
+          strictFail(context, 'Malformed comment')
+          // allow <!-- blah -- bloo --> in non-strict mode,
+          // which is a comment of " blah -- bloo "
+          context.comment += '--' + c
+          context.state_comment = STATE_COMMENT.COMMENT
+        } else {
+          context.state = STATE.TEXT
+        }
+        break
+      default:
+        throw new Error('Unknown state: ' + context.state)
+    }
+
+    if (context.state === STATE.TEXT) {
+      context.state_comment = STATE_COMMENT.COMMENT
+      break
+    }
+  } // while
+}
 
 function parse_pi(context: XmlParser, cursor: Cursor) {
 
