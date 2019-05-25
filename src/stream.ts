@@ -1,7 +1,7 @@
 import { Duplex } from "stream";
 import { SAXOptions } from './types'
 import { XmlParser } from "./internal/xmlparser";
-import { XmlMessage, messageEmitter } from './messages';
+import { XmlMessage, messageEmitter, MessageType } from './messages';
 
 export function createStream(opt: SAXOptions) {
   return new SMAXStream(opt)
@@ -13,11 +13,27 @@ export class SMAXStream extends Duplex {
 
   queue: XmlMessage[] = []
   _parser: XmlParser
+  _reading: boolean = false
 
   constructor(opt?: SAXOptions) {
     super({ readableObjectMode: true })
-    const emit = messageEmitter(this._push.bind(this))
-    this._parser = new XmlParser(emit, opt || {})
+
+    const emit = (m: XmlMessage) => {
+      const eventNames = this.eventNames()
+      if (m.type === MessageType.error && eventNames.includes('error')) {
+        this.emit('error', m)
+      } else if (m.type === MessageType.end && eventNames.includes('end')) {
+        this.emit('end', m)
+      } else {
+        this._push(m)
+        if (m.type === MessageType.end) {
+          this._push()
+        }
+      }
+    }
+
+    const emitter = messageEmitter(emit)
+    this._parser = new XmlParser(emitter, opt || {})
   }
 
   _push(message?: XmlMessage) {
@@ -26,12 +42,9 @@ export class SMAXStream extends Duplex {
       this.queue.push(message)
     }
 
-    if (!this.isPaused() && this.queue.length > 0) {
-      let _continue = true;
-      while (_continue && this.queue.length > 0) {
-        const Message = this.queue.shift() as XmlMessage
-        _continue = this.push(Message);
-      }
+    while (this._reading && this.queue.length > 0) {
+      const msg = this.queue.shift() as XmlMessage
+      this._reading = this.push(msg);
     }
   }
 
@@ -46,6 +59,7 @@ export class SMAXStream extends Duplex {
   }
 
   _read(_size: number): void {
+    this._reading = true
     this._push()
   }
 }
