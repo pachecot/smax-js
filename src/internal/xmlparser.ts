@@ -123,6 +123,7 @@ export class XmlParser implements Position {
   state_doctype = STATE_DOCTYPE.DOCTYPE
   state_pi = STATE_PI.PI
   state_comment = STATE_COMMENT.COMMENT
+  state_sgmldecl = STATE_SGML_DECL.SGML_DECL
 
   tag: XmlTag = NULL_TAG
   error: Error | null = null
@@ -240,7 +241,6 @@ const enum STATE {
   /** &amp and such.                        */ TEXT_ENTITY,
   /** <                                     */ OPEN_WAKA,
   /** <!BLARG                               */ SGML_DECL,
-  /** <!BLARG foo "bar                      */ SGML_DECL_QUOTED,
   /** <!DOCTYPE                             */ DOCTYPE,
   /** <!--                                  */ COMMENT,
   /** <![CDATA[ something                   */ CDATA,
@@ -250,6 +250,11 @@ const enum STATE {
   /** <a                                    */ ATTRIB,
   /** </a                                   */ CLOSE_TAG,
   /** </a   >                               */ CLOSE_TAG_SAW_WHITE,
+}
+
+const enum STATE_SGML_DECL {
+  /** <!BLARG                               */ SGML_DECL,
+  /** <!BLARG foo "bar                      */ SGML_DECL_QUOTED,
 }
 
 const enum STATE_COMMENT {
@@ -389,6 +394,12 @@ function write(context: XmlParser, chunk?: string) {
         }
         continue
 
+      case STATE.SGML_DECL:
+        parse_sgml_decl(context, cursor)
+        if (!context.c) {
+          break
+        }
+        continue
     }
 
     let c = context.c = cursor.nextChar()
@@ -460,42 +471,6 @@ function write(context: XmlParser, chunk?: string) {
         }
         break
 
-      case STATE.SGML_DECL:
-        if ((context.sgmlDecl + c).toUpperCase() === CDATA) {
-          emitNode(context, 'opencdata')
-          context.state = STATE.CDATA
-          context.sgmlDecl = ''
-          context.cdata = ''
-        } else if (context.sgmlDecl + c === '--') {
-          context.state = STATE.COMMENT
-          context.comment = ''
-          context.sgmlDecl = ''
-        } else if ((context.sgmlDecl + c).toUpperCase() === DOCTYPE) {
-          context.state = STATE.DOCTYPE
-          if (context.doctype || context.sawRoot) {
-            strictFail(context, 'Inappropriately located doctype declaration')
-          }
-          context.doctype = ''
-          context.sgmlDecl = ''
-        } else if (c === '>') {
-          emitNode(context, 'sgmldeclaration', context.sgmlDecl)
-          context.sgmlDecl = ''
-          context.state = STATE.TEXT
-        } else if (isQuote(c)) {
-          context.state = STATE.SGML_DECL_QUOTED
-          context.sgmlDecl += c
-        } else {
-          context.sgmlDecl += c
-        }
-        break
-
-      case STATE.SGML_DECL_QUOTED:
-        if (c === context.q) {
-          context.state = STATE.SGML_DECL
-          context.q = ''
-        }
-        context.sgmlDecl += c
-        break
 
       case STATE.OPEN_TAG:
         if (isMatch(nameBody, c)) {
@@ -604,6 +579,63 @@ function write(context: XmlParser, chunk?: string) {
 //     }
 //   } // while
 // }
+
+function parse_sgml_decl(context: XmlParser, cursor: Cursor) {
+
+  while (true) {
+    let c = context.c = cursor.nextChar()
+
+    if (!c) {
+      break
+    }
+
+    switch (context.state_sgmldecl) {
+      case STATE_SGML_DECL.SGML_DECL:
+        if ((context.sgmlDecl + c).toUpperCase() === CDATA) {
+          emitNode(context, 'opencdata')
+          context.state = STATE.CDATA
+          context.sgmlDecl = ''
+          context.cdata = ''
+        } else if (context.sgmlDecl + c === '--') {
+          context.state = STATE.COMMENT
+          context.comment = ''
+          context.sgmlDecl = ''
+        } else if ((context.sgmlDecl + c).toUpperCase() === DOCTYPE) {
+          context.state = STATE.DOCTYPE
+          if (context.doctype || context.sawRoot) {
+            strictFail(context, 'Inappropriately located doctype declaration')
+          }
+          context.doctype = ''
+          context.sgmlDecl = ''
+        } else if (c === '>') {
+          emitNode(context, 'sgmldeclaration', context.sgmlDecl)
+          context.sgmlDecl = ''
+          context.state = STATE.TEXT
+        } else if (isQuote(c)) {
+          context.state_sgmldecl = STATE_SGML_DECL.SGML_DECL_QUOTED
+          context.sgmlDecl += c
+        } else {
+          context.sgmlDecl += c
+        }
+        break
+
+      case STATE_SGML_DECL.SGML_DECL_QUOTED:
+        if (c === context.q) {
+          context.state_sgmldecl = STATE_SGML_DECL.SGML_DECL
+          context.q = ''
+        }
+        context.sgmlDecl += c
+        break
+
+      default:
+        throw new Error('Unknown state: ' + context.state)
+    }
+
+    if (context.state === STATE.CDATA || context.state === STATE.COMMENT || context.state === STATE.DOCTYPE || context.state === STATE.TEXT) {
+      break
+    }
+  } // while
+}
 
 function parse_comment(context: XmlParser, cursor: Cursor) {
 
