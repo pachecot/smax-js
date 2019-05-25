@@ -331,12 +331,22 @@ function write(context: XmlParser, chunk?: string) {
 
   while (true) {
 
-    if (context.state === STATE.ATTRIB) {
-      write_attr(context, cursor)
-      if (!context.c) {
-        break
-      }
-      continue
+    switch (context.state) {
+      case STATE.ATTRIB:
+        write_attr(context, cursor)
+        if (!context.c) {
+          break
+        }
+        continue
+
+      case STATE.CDATA:
+      case STATE.CDATA_ENDING:
+      case STATE.CDATA_ENDING_2:
+        write_cdata(context, cursor)
+        if (!context.c) {
+          break
+        }
+        continue
     }
 
     let c = context.c = cursor.nextChar()
@@ -521,39 +531,6 @@ function write(context: XmlParser, chunk?: string) {
         }
         break
 
-      case STATE.CDATA:
-        if (c === ']') {
-          context.state = STATE.CDATA_ENDING
-        } else {
-          context.cdata += c
-        }
-        break
-
-      case STATE.CDATA_ENDING:
-        if (c === ']') {
-          context.state = STATE.CDATA_ENDING_2
-        } else {
-          context.cdata += ']' + c
-          context.state = STATE.CDATA
-        }
-        break
-
-      case STATE.CDATA_ENDING_2:
-        if (c === '>') {
-          if (context.cdata) {
-            emitNode(context, 'cdata', context.cdata)
-          }
-          emitNode(context, 'closecdata')
-          context.cdata = ''
-          context.state = STATE.TEXT
-        } else if (c === ']') {
-          context.cdata += ']'
-        } else {
-          context.cdata += ']]' + c
-          context.state = STATE.CDATA
-        }
-        break
-
       case STATE.PROC_INST:
         if (c === '?') {
           context.state = STATE.PROC_INST_ENDING
@@ -688,6 +665,58 @@ function write(context: XmlParser, chunk?: string) {
   }
 }
 
+function write_cdata(context: XmlParser, cursor: Cursor) {
+
+  while (true) {
+    let c = context.c = cursor.nextChar()
+
+    if (!c) {
+      break
+    }
+    switch (context.state) {
+      case STATE.CDATA:
+        if (c === ']') {
+          context.state = STATE.CDATA_ENDING
+        } else {
+          context.cdata += c
+        }
+        break
+
+      case STATE.CDATA_ENDING:
+        if (c === ']') {
+          context.state = STATE.CDATA_ENDING_2
+        } else {
+          context.cdata += ']' + c
+          context.state = STATE.CDATA
+        }
+        break
+
+      case STATE.CDATA_ENDING_2:
+        if (c === '>') {
+          if (context.cdata) {
+            emitNode(context, 'cdata', context.cdata)
+          }
+          emitNode(context, 'closecdata')
+          context.cdata = ''
+          context.state = STATE.TEXT
+        } else if (c === ']') {
+          context.cdata += ']'
+        } else {
+          context.cdata += ']]' + c
+          context.state = STATE.CDATA
+        }
+        break
+
+      default:
+        throw new Error('Unknown state: ' + context.state)
+    }
+
+    if (context.state === STATE.TEXT) {
+      break
+    }
+
+  } // while
+}
 
 function write_attr(context: XmlParser, cursor: Cursor) {
 
@@ -854,10 +883,6 @@ function write_attr(context: XmlParser, cursor: Cursor) {
       break
     }
   } // while
-
-  if (context.position >= context.bufferCheckPosition) {
-    checkBufferLength(context)
-  }
 }
 
 
