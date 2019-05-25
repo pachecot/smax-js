@@ -1,6 +1,7 @@
 import { SAXOptions, XmlTag, PINode, EventData, Emitter, EmitterEvent, XmlDeclaration, TagKey } from './types'
 import { XmlParser } from './internal/xmlparser';
 import { getPosition } from './internal/getPosition';
+import { chunkToString } from './internal/chunkToString';
 
 
 /**
@@ -12,13 +13,6 @@ import { getPosition } from './internal/getPosition';
 export const parser = function (opt?: SAXOptions) {
   return new SAXParser(opt)
 }
-
-const chunkToString = Buffer && Buffer.isBuffer ?
-  (chunk: any): string => Buffer.isBuffer(chunk) ?
-    chunk.toString('utf8') :
-    typeof chunk === 'string' ? chunk : chunk && chunk.toString() :
-  (chunk: any): string =>
-    typeof chunk === 'string' ? chunk : chunk && chunk.toString()
 
 /**
  * SAX Style XML Parser
