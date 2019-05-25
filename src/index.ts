@@ -1,6 +1,6 @@
 export {
+  parser,
   SAXParser,
-  parser
 } from './parser'
 export {
   EVENTS
@@ -18,22 +18,22 @@ export {
   SMAXStream
 } from "./stream";
 export {
-  MessageType,
-  Message,
-  ReadyMessage,
-  ProcessingInstructionMessage,
-  DoctypeMessage,
-  CommentMessage,
-  SGMLDeclarationMessage,
-  TextMessage,
-  OpenTagMessage,
-  CloseTagMessage,
-  OpenCDATAMessage,
   CDATAMessage,
   CloseCDATAMessage,
+  CloseTagMessage,
+  CommentMessage,
+  DoctypeMessage,
   EndMessage,
   ErrorMessage,
+  Message,
+  messages,
+  MessageType,
+  OpenCDATAMessage,
+  OpenTagMessage,
+  ProcessingInstructionMessage,
+  ReadyMessage,
+  SGMLDeclarationMessage,
+  TextMessage,
   XmlMessage,
-  messages
 } from "./messages";
 export * from './types'
