@@ -116,8 +116,11 @@ export class XmlParser implements Position {
   closed = false
   closedRoot = false
   sawRoot = false
+
   state = STATE.BEGIN
   state_attr = STATE_ATTR.ATTRIB
+  state_cdata = STATE_CDATA.CDATA
+
   tag: XmlTag = NULL_TAG
   error: Error | null = null
   ENTITIES: { [name: string]: string } = {}
@@ -227,7 +230,7 @@ function parseXmlDeclaration(body: string): XmlDeclaration | null {
   return r
 }
 
-enum STATE {
+const enum STATE {
   /** leading byte order mark or whitespace */ BEGIN,
   /** leading whitespace                    */ BEGIN_WHITESPACE,
   /** general stuff                         */ TEXT,
@@ -244,8 +247,6 @@ enum STATE {
   /** <!-- blah -                           */ COMMENT_ENDING,
   /** <!-- blah --                          */ COMMENT_ENDED,
   /** <![CDATA[ something                   */ CDATA,
-  /** ]                                     */ CDATA_ENDING,
-  /** ]]                                    */ CDATA_ENDING_2,
   /** <?hi                                  */ PROC_INST,
   /** <?hi there                            */ PROC_INST_BODY,
   /** <?hi "there" ?                        */ PROC_INST_ENDING,
@@ -256,6 +257,11 @@ enum STATE {
   /** </a   >                               */ CLOSE_TAG_SAW_WHITE,
 }
 
+const enum STATE_CDATA {
+  /** <![CDATA[ something                   */ CDATA,
+  /** ]                                     */ CDATA_ENDING,
+  /** ]]                                    */ CDATA_ENDING_2,
+}
 
 const enum STATE_ATTR {
   /** <a                                    */ ATTRIB,
@@ -341,8 +347,6 @@ function write(context: XmlParser, chunk?: string) {
         continue
 
       case STATE.CDATA:
-      case STATE.CDATA_ENDING:
-      case STATE.CDATA_ENDING_2:
         write_cdata(context, cursor)
         if (!context.c) {
           break
@@ -674,25 +678,25 @@ function write_cdata(context: XmlParser, cursor: Cursor) {
     if (!c) {
       break
     }
-    switch (context.state) {
-      case STATE.CDATA:
+    switch (context.state_cdata) {
+      case STATE_CDATA.CDATA:
         if (c === ']') {
-          context.state = STATE.CDATA_ENDING
+          context.state_cdata = STATE_CDATA.CDATA_ENDING
         } else {
           context.cdata += c
         }
         break
 
-      case STATE.CDATA_ENDING:
+      case STATE_CDATA.CDATA_ENDING:
         if (c === ']') {
-          context.state = STATE.CDATA_ENDING_2
+          context.state_cdata = STATE_CDATA.CDATA_ENDING_2
         } else {
           context.cdata += ']' + c
-          context.state = STATE.CDATA
+          context.state_cdata = STATE_CDATA.CDATA
         }
         break
 
-      case STATE.CDATA_ENDING_2:
+      case STATE_CDATA.CDATA_ENDING_2:
         if (c === '>') {
           if (context.cdata) {
             emitNode(context, 'cdata', context.cdata)
@@ -704,7 +708,7 @@ function write_cdata(context: XmlParser, cursor: Cursor) {
           context.cdata += ']'
         } else {
           context.cdata += ']]' + c
-          context.state = STATE.CDATA
+          context.state_cdata = STATE_CDATA.CDATA
         }
         break
 
@@ -713,9 +717,9 @@ function write_cdata(context: XmlParser, cursor: Cursor) {
     }
 
     if (context.state === STATE.TEXT) {
+      context.state_cdata = STATE_CDATA.CDATA
       break
     }
-
   } // while
 }
 
