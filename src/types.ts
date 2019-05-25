@@ -103,6 +103,15 @@ export interface NSNode {
   uri: string
 }
 
+/**
+ * XML Declaration Encoding supported encodings
+ */
+export type XmlDeclarationEncoding = 'UTF-8' | 'UTF-16' | 'ISO-10646-UCS-2' | 'ISO-10646-UCS-4' |
+  'ISO-8859-1' | 'ISO-8859-2' | 'ISO-8859-3' | 'ISO-8859-4' | 'ISO-8859-5' |
+  'ISO-8859-6' | 'ISO-8859-7' | 'ISO-8859-8' | 'ISO-8859-9' |
+  'ISO-2022-JP' | 'Shift_JIS' | 'EUC-JP'
+
+export type YesNo = 'yes' | 'no'
 
 /**
  * XML Declaration
@@ -110,8 +119,8 @@ export interface NSNode {
  */
 export interface XmlDeclaration {
   version: string
-  encoding?: string
-  standalone?: 'yes' | 'no'
+  encoding?: XmlDeclarationEncoding
+  standalone?: YesNo
 }
 
 /** 
@@ -123,15 +132,15 @@ export interface PINode {
 }
 
 export type EventData =
+  AttributeNode |
+  Error |
+  NSNode |
+  PINode |
+  QualifiedAttribute |
   string |
-  XmlTag |
   TagKey |
   XmlDeclaration |
-  QualifiedAttribute |
-  AttributeNode |
-  PINode |
-  NSNode |
-  Error
+  XmlTag
 
 
 export interface XmlNode extends Tag {

@@ -1,4 +1,9 @@
-import { SAXOptions, XmlTag, QualifiedTag, Namespace, Position, Tag, QualifiedAttribute, Emitter, EventData, EmitterEvent, XmlDeclaration } from '../types'
+import {
+  SAXOptions, XmlTag, QualifiedTag, Namespace,
+  Position, Tag, QualifiedAttribute, Emitter, EventData,
+  EmitterEvent, XmlDeclaration, XmlDeclarationEncoding
+} from '../types'
+
 import { ENTITIES, XML_ENTITIES } from './entities';
 
 const buffers = [
@@ -216,7 +221,7 @@ function parseXmlDeclaration(body: string): XmlDeclaration | null {
   if (!m) { return null }
 
   const r: XmlDeclaration = { version: m[1] }
-  if (m[2]) { r.encoding = m[2] }
+  if (m[2]) { r.encoding = m[2] as XmlDeclarationEncoding }
   if (m[3]) { r.standalone = m[3].toLowerCase() as 'yes' | 'no' }
   return r
 }
