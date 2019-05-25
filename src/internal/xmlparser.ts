@@ -341,6 +341,16 @@ class Cursor {
   }
 }
 
+const parserMap = {
+  [STATE.ATTRIB]: parse_attr,
+  [STATE.CDATA]: parse_cdata,
+  [STATE.DOCTYPE]: parse_doctype,
+  [STATE.PROC_INST]: parse_pi,
+  [STATE.COMMENT]: parse_comment,
+  [STATE.SGML_DECL]: parse_sgml_decl,
+}
+
+
 function write(context: XmlParser, chunk?: string) {
   if (context.error) {
     throw context.error
@@ -358,48 +368,13 @@ function write(context: XmlParser, chunk?: string) {
 
   while (true) {
 
-    switch (context.state) {
-      case STATE.ATTRIB:
-        parse_attr(context, cursor)
-        if (!context.c) {
-          break
-        }
-        continue
-
-      case STATE.CDATA:
-        parse_cdata(context, cursor)
-        if (!context.c) {
-          break
-        }
-        continue
-
-      case STATE.DOCTYPE:
-        parse_doctype(context, cursor)
-        if (!context.c) {
-          break
-        }
-        continue
-
-      case STATE.PROC_INST:
-        parse_pi(context, cursor)
-        if (!context.c) {
-          break
-        }
-        continue
-
-      case STATE.COMMENT:
-        parse_comment(context, cursor)
-        if (!context.c) {
-          break
-        }
-        continue
-
-      case STATE.SGML_DECL:
-        parse_sgml_decl(context, cursor)
-        if (!context.c) {
-          break
-        }
-        continue
+    const parser = parserMap[context.state]
+    if (parser) {
+      parser(context, cursor)
+      if (!context.c) {
+        break
+      }
+      continue
     }
 
     let c = context.c = cursor.nextChar()
