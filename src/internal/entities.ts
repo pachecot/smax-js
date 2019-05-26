@@ -10,7 +10,7 @@ export const XML_ENTITIES: EntityMap = {
 }
 
 export const ENTITIES: EntityMap = (function () {
-  const entities = {
+  const entities: { [id: string]: number } = {
     'AElig': 198,
     'Aacute': 193,
     'Acirc': 194,
