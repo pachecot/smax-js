@@ -369,7 +369,7 @@ const enum STATE_SGML {
   /** `<!BLARG foo "bar`                    */ QUOTED,
   /** `<!--`                                */ COMMENT,
   /** `<!DOCTYPE `                          */ DOCTYPE,
-  /** <![CDATA[ something`                  */ CDATA,
+  /** `<![CDATA[ something`                 */ CDATA,
 }
 
 const enum STATE_COMMENT {
@@ -805,16 +805,9 @@ function parse_text(context: XmlParser, cursor: Cursor) {
  * Parser for `STATE.SGML` - SGML Declarations `<!name body>`
  *
  * next states:
- * - `STATE.CDATA`
- * - `STATE.COMMENT`
- * - `STATE.DOCTYPE`
  * - `STATE.TEXT`
  */
 function parse_sgml(context: XmlParser, cursor: Cursor) {
-
-  if (context.state !== STATE.SGML) {
-    throw new Error('Illegal state: ' + context.state + ' expexted: ' + STATE.SGML)
-  }
 
   while (true) {
     let c = context.c = cursor.nextChar()
@@ -874,7 +867,7 @@ function parse_sgml(context: XmlParser, cursor: Cursor) {
         break
 
       default:
-        throw new Error('Illegal or Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state_sgml)
     }
 
     if (!context.c) {
