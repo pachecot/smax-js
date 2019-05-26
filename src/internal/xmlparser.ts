@@ -106,6 +106,7 @@ export class XmlParser implements Position {
   textNode = ''
   tagName = ''
   doctype = ''
+  quoted = ''
   procInstName = ''
   procInstBody = ''
   entity = ''
@@ -863,18 +864,18 @@ function parse_sgml(context: XmlParser, cursor: Cursor) {
           context.state = STATE.TEXT
         } else if (isQuote(c)) {
           context.state_sgmldecl = STATE_SGML.QUOTED
-          context.sgmlDecl += c
+          context.quoted = context.q = c
         } else {
           context.sgmlDecl += c
         }
         break
 
       case STATE_SGML.QUOTED:
-        if (c === context.q) {
-          context.q = ''
+        if (parse_quoted(context, cursor)) {
+          context.sgmlDecl += context.quoted
+          context.quoted = ''
           context.state_sgmldecl = STATE_SGML.DECL
         }
-        context.sgmlDecl += c
         break
 
       default:
@@ -887,6 +888,22 @@ function parse_sgml(context: XmlParser, cursor: Cursor) {
       || context.state === STATE.TEXT) {
       context.state_sgmldecl = STATE_SGML.DECL
       break
+    }
+  }
+}
+
+function parse_quoted(context: XmlParser, cursor: Cursor) {
+
+  let c = context.c
+  while (true) {
+    context.quoted += c
+    if (c === context.q) {
+      context.q = ''
+      return true
+    }
+    c = context.c = cursor.nextChar()
+    if (!c) {
+      return false
     }
   }
 }
@@ -1056,15 +1073,15 @@ function parse_doctype(context: XmlParser, cursor: Cursor) {
             context.state_doctype = STATE_DOCTYPE.DTD
           } else if (isQuote(c)) {
             context.state_doctype = STATE_DOCTYPE.QUOTED
-            context.q = c
+            context.quoted = context.q = c
           }
         }
         break
 
       case STATE_DOCTYPE.QUOTED:
-        context.doctype += c
-        if (c === context.q) {
-          context.q = ''
+        if (parse_quoted(context, cursor)) {
+          context.doctype += context.quoted
+          context.quoted = ''
           context.state_doctype = STATE_DOCTYPE.DOCTYPE
         }
         break
@@ -1075,15 +1092,15 @@ function parse_doctype(context: XmlParser, cursor: Cursor) {
           context.state_doctype = STATE_DOCTYPE.DOCTYPE
         } else if (isQuote(c)) {
           context.state_doctype = STATE_DOCTYPE.DTD_QUOTED
-          context.q = c
+          context.quoted = context.q = c
         }
         break
 
       case STATE_DOCTYPE.DTD_QUOTED:
-        context.doctype += c
-        if (c === context.q) {
+        if (parse_quoted(context, cursor)) {
+          context.doctype += context.quoted
+          context.quoted = ''
           context.state_doctype = STATE_DOCTYPE.DTD
-          context.q = ''
         }
         break
 
