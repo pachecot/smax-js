@@ -1182,7 +1182,6 @@ function parse_cdata(context: XmlParser, cursor: Cursor) {
  * next states:
  * - `STATE.TEXT`
  * - `STATE.OPENTAG`
- *
  */
 function parse_attr(context: XmlParser, cursor: Cursor) {
 
@@ -1279,6 +1278,23 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
         context.state_attr = STATE_ATTR.VALUE_CLOSED
         break
 
+      case STATE_ATTR.VALUE_UNQUOTED:
+        if (!isAttribEnd(c)) {
+          if (c === '&') {
+            context.state_attr = STATE_ATTR.VALUE_ENTITY_U
+          } else {
+            context.attribValue += c
+          }
+          break
+        }
+        attrib(context)
+        if (c === '>') {
+          openTag(context)
+        } else {
+          context.state_attr = STATE_ATTR.ATTRIB
+        }
+        break
+
       case STATE_ATTR.VALUE_CLOSED:
         if (isWhitespace(c)) {
           context.state_attr = STATE_ATTR.ATTRIB
@@ -1302,20 +1318,6 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
         if (ent_q) {
           context.attribValue += ent_q
           context.state_attr = STATE_ATTR.VALUE_QUOTED
-      case STATE_ATTR.VALUE_UNQUOTED:
-        if (!isAttribEnd(c)) {
-          if (c === '&') {
-            context.state_attr = STATE_ATTR.VALUE_ENTITY_U
-          } else {
-            context.attribValue += c
-          }
-          break
-        }
-        attrib(context)
-        if (c === '>') {
-          openTag(context)
-        } else {
-          context.state_attr = STATE_ATTR.ATTRIB
         }
         break
 
