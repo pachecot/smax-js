@@ -582,9 +582,8 @@ function parse_waka(context: XmlParser, cursor: Cursor) {
         }
         break
 
-
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.SGML
@@ -645,7 +644,7 @@ function parse_closetag(context: XmlParser, cursor: Cursor) {
         }
         break
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.TEXT) {
@@ -689,7 +688,7 @@ function parse_begin(context: XmlParser, cursor: Cursor) {
         beginWhiteSpace(context, c)
         break
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
     if (context.state === STATE.OPEN_WAKA
       || context.state === STATE.TEXT) {
@@ -746,7 +745,7 @@ function parse_opentag(context: XmlParser, cursor: Cursor) {
         break
 
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.ATTRIB
@@ -815,7 +814,7 @@ function parse_text(context: XmlParser, cursor: Cursor) {
         break
 
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.OPEN_WAKA) {
@@ -887,7 +886,7 @@ function parse_sgml(context: XmlParser, cursor: Cursor) {
         break
 
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.CDATA
@@ -950,8 +949,9 @@ function parse_comment(context: XmlParser, cursor: Cursor) {
           context.state = STATE.TEXT
         }
         break
+
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.TEXT) {
@@ -1026,7 +1026,7 @@ function parse_pi(context: XmlParser, cursor: Cursor) {
         }
         break
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.TEXT) {
@@ -1096,7 +1096,7 @@ function parse_doctype(context: XmlParser, cursor: Cursor) {
         break
 
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.TEXT) {
@@ -1156,7 +1156,7 @@ function parse_cdata(context: XmlParser, cursor: Cursor) {
         break
 
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.TEXT) {
@@ -1334,7 +1334,7 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
         break
 
       default:
-        throw new Error('Unknown state: ' + context.state)
+        throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
     if (context.state === STATE.OPENTAG
