@@ -933,11 +933,6 @@ function parse_comment(context: XmlParser, cursor: Cursor) {
       case STATE_COMMENT.ENDING:
         if (c === '-') {
           context.state_comment = STATE_COMMENT.ENDED
-          context.comment = textopts(context.opt, context.comment)
-          if (context.comment) {
-            emitNode(context, 'comment', context.comment)
-          }
-          context.comment = ''
         } else {
           context.comment += '-' + c
           context.state_comment = STATE_COMMENT.COMMENT
@@ -952,6 +947,11 @@ function parse_comment(context: XmlParser, cursor: Cursor) {
           context.comment += '--' + c
           context.state_comment = STATE_COMMENT.COMMENT
         } else {
+          context.comment = textopts(context.opt, context.comment)
+          if (context.comment) {
+            emitNode(context, 'comment', context.comment)
+          }
+          context.comment = ''
           context.state = STATE.TEXT
         }
         break
