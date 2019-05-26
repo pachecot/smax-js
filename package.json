@@ -2,7 +2,7 @@
   "name": "smax",
   "description": "An streaming XML parser in JavaScript",
   "author": "Tom Pacheco <tomp@netp.org>",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "main": "lib/index.js",
   "license": "ISC",
   "scripts": {
