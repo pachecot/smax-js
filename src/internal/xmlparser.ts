@@ -258,19 +258,19 @@ function parseXmlDeclaration(body: string): XmlDeclaration | null {
 /*
  * State Table
  * 
- * | NEXT      | ATTRIB | BEGIN | CDATA | CLOSETAG | COMMENT | DOCTYPE | OPENTAG | OPEN_WAKA | PI | SGML_DECL | TEXT | 
- * | --------- | ------ | ----- | ----- | -------- | ------- | ------- | ------- | --------- | -- | --------- | ---- | 
- * | ATTRIB    |        |       |       |          |         |         | ok      |           |    |           |      | 
- * | BEGIN     |        |       |       |          |         |         |         |           |    |           |      | 
- * | CDATA     |        |       |       |          |         |         |         |           |    | ok        |      | 
- * | CLOSETAG  |        |       |       |          |         |         |         |           |    |           | ok   | 
- * | COMMENT   |        |       |       |          |         |         |         |           |    | ok        |      | 
- * | DOCTYPE   |        |       |       |          |         |         |         |           |    | ok        |      | 
- * | OPENTAG   | ok     |       |       |          |         |         |         | ok        |    |           |      | 
- * | OPEN_WAKA |        | ok    |       |          |         |         |         |           |    |           | ok   | 
- * | PI        |        |       |       |          |         |         |         | ok        |    |           |      | 
- * | SGML_DECL |        |       |       |          |         |         |         | ok        |    |           |      | 
- * | TEXT      | ok     | e!    | ok    | ok       | ok      | ok      | ok      | ok        | ok | ok        |      | 
+ * | NEXT      | ATTRIB | BEGIN | CDATA | CLOSETAG | COMMENT | DOCTYPE | OPENTAG | OPEN_WAKA | PI   | SGML | TEXT | 
+ * | --------- | ------ | ----- | ----- | -------- | ------- | ------- | ------- | --------- | ---- | ---- | ---- | 
+ * | ATTRIB    |        |       |       |          |         |         | e!      |           |      |      |      | 
+ * | BEGIN     |        |       |       |          |         |         |         |           |      |      |      | 
+ * | CDATA     |        |       |       |          |         |         |         |           |      | ok   |      | 
+ * | CLOSETAG  |        |       |       |          |         |         |         |           |      |      | ok   | 
+ * | COMMENT   |        |       |       |          |         |         |         |           |      | ok   |      | 
+ * | DOCTYPE   |        |       |       |          |         |         |         |           |      | ok   |      | 
+ * | OPENTAG   | ok     |       |       |          |         |         |         | ok        |      |      |      | 
+ * | OPEN_WAKA |        | ok    |       |          |         |         |         |           |      |      | ok   | 
+ * | PI        |        |       |       |          |         |         |         | ok        |      |      |      | 
+ * | SGML      |        |       |       |          |         |         |         | ok        |      |      |      | 
+ * | TEXT      | ok     | e!    | ok    | ok       | ok      | ok      | ok      | ok        | ok   | ok   |      | 
  * 
  */
 
@@ -294,7 +294,7 @@ const enum STATE {
   /**
    * general stuff
    * 
-   * prev states: `ATTRIB`, `OPEN_WAKA`, `DOCTYPE`, `SGML_DECL`, `COMMENT`, `CDATA`, `PI`, `OPENTAG`, 
+   * prev states: `ATTRIB`, `OPEN_WAKA`, `DOCTYPE`, `SGML`, `COMMENT`, `CDATA`, `PI`, `OPENTAG`, 
    * 
    * next states: `OPEN_WAKA`
    */
@@ -305,7 +305,7 @@ const enum STATE {
    * 
    * prev states: `TEXT`
    * 
-   * next states:, `SGML_DECL`, `CLOSETAG`, `PI`, `OPENTAG`, `TEXT`
+   * next states:, `SGML`, `CLOSETAG`, `PI`, `OPENTAG`, `TEXT`
    */
   OPEN_WAKA,
 
@@ -321,7 +321,7 @@ const enum STATE {
   /**
    * `<!DOCTYPE`
    * 
-   * prev states: `SGML_DECL`
+   * prev states: `SGML`
    * 
    * next states: `TEXT`
    */
@@ -330,7 +330,7 @@ const enum STATE {
   /**
    *  `<!--`
    * 
-   * prev states: `SGML_DECL`
+   * prev states: `SGML`
    * 
    * next states: `TEXT`
    */
@@ -339,7 +339,7 @@ const enum STATE {
   /**
    * `<![CDATA[ something`
    * 
-   * prev states: `SGML_DECL`
+   * prev states: `SGML`
    * 
    * next states: `TEXT`
    */
@@ -534,9 +534,9 @@ function parse(context: XmlParser, chunk: string) {
  * Parser for `STATE.OPEN_WAKA` - the opening `<`
  *
  * next states:
- * - `STATE.SGML_DECL`
- * - `STATE.CLOSE_TAG`
- * - `STATE.PROC_INST`
+ * - `STATE.SGML`
+ * - `STATE.CLOSETAG`
+ * - `STATE.PI`
  * - `STATE.OPENTAG`
  * - `STATE.TEXT`
  *
@@ -651,7 +651,7 @@ function parse_closetag(context: XmlParser, cursor: Cursor) {
     if (context.state === STATE.TEXT) {
       break
     }
-  } // while
+  }
 }
 
 
@@ -678,6 +678,7 @@ function parse_begin(context: XmlParser, cursor: Cursor) {
     switch (context.state_begin) {
       case STATE_BEGIN.BEGIN:
         context.state_begin = STATE_BEGIN.WHITESPACE
+        // BOM
         if (c === '\uFEFF') {
           break
         }
@@ -694,7 +695,7 @@ function parse_begin(context: XmlParser, cursor: Cursor) {
       || context.state === STATE.TEXT) {
       break
     }
-  } // while
+  }
 }
 
 
@@ -702,11 +703,8 @@ function parse_begin(context: XmlParser, cursor: Cursor) {
  * Parser for `STATE.OPENTAG` - open tag `<tagname ` or `<tagname>` or `<tagname/>`
  *
  * next states:
- * - `STATE.ATTRIB`
+ * - !`STATE.ATTRIB`
  * - `STATE.TEXT`
- *
- * @param context
- * @param cursor
  */
 function parse_opentag(context: XmlParser, cursor: Cursor) {
 
@@ -756,7 +754,7 @@ function parse_opentag(context: XmlParser, cursor: Cursor) {
       context.state_opentag = STATE_OPENTAG.OPENTAG
       break
     }
-  } // while
+  }
 }
 
 
@@ -765,9 +763,6 @@ function parse_opentag(context: XmlParser, cursor: Cursor) {
  *
  * next states:
  * - `STATE.OPEN_WAKA`
- *
- * @param context
- * @param cursor
  */
 function parse_text(context: XmlParser, cursor: Cursor) {
 
@@ -827,12 +822,12 @@ function parse_text(context: XmlParser, cursor: Cursor) {
       context.state_text = STATE_TEXT.TEXT
       break
     }
-  } // while
+  }
 }
 
 
 /**
- * Parser for `STATE.SGML_DECL` - SGML Declarations `<!name body>`
+ * Parser for `STATE.SGML` - SGML Declarations `<!name body>`
  *
  * next states:
  * - `STATE.CDATA`
@@ -902,12 +897,12 @@ function parse_sgml_decl(context: XmlParser, cursor: Cursor) {
       context.state_sgmldecl = STATE_SGML_DECL.SGML_DECL
       break
     }
-  } // while
+  }
 }
 
 
 /**
- * Parser for `STATE.COMMENT` - comment blocks `<!--Some Comment-->`
+ * Parser for `STATE.COMMENT` - comment blocks `<!-- Some Comment -->`
  *
  * Follwing States:
  * - `STATE.TEXT`
@@ -963,7 +958,7 @@ function parse_comment(context: XmlParser, cursor: Cursor) {
       context.state_comment = STATE_COMMENT.COMMENT
       break
     }
-  } // while
+  }
 }
 
 /**
@@ -1038,7 +1033,7 @@ function parse_pi(context: XmlParser, cursor: Cursor) {
       context.state_pi = STATE_PI.PI
       break
     }
-  } // while
+  }
 }
 
 /**
@@ -1107,7 +1102,7 @@ function parse_doctype(context: XmlParser, cursor: Cursor) {
     if (context.state === STATE.TEXT) {
       break
     }
-  } // while
+  }
 }
 
 
@@ -1168,7 +1163,7 @@ function parse_cdata(context: XmlParser, cursor: Cursor) {
       context.state_cdata = STATE_CDATA.CDATA
       break
     }
-  } // while
+  }
 }
 
 
@@ -1347,7 +1342,7 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
       context.state_attr = STATE_ATTR.ATTRIB
       break
     }
-  } // while
+  }
 }
 
 
@@ -1431,7 +1426,6 @@ function qattribute(name: string) {
 
 /**
  * process attribute and update tag namespace if xmlns is enabled
- *
  */
 function attrib(context: XmlParser) {
 
@@ -1485,9 +1479,6 @@ function createAttribute(name: string, value: string) {
  * process open tag and emit event
  *
  * changes state to `STATE.TEXT`
- *
- * @param context
- * @param selfClosing
  */
 function openTag(context: XmlParser, selfClosing?: boolean) {
 
@@ -1550,7 +1541,6 @@ function openTag(context: XmlParser, selfClosing?: boolean) {
  * Process the closeTag and emit event
  *
  * Changes state to `STATE.TEXT`
- * @param context
  */
 function closeTag(context: XmlParser) {
   if (!context.tagName) {
@@ -1600,8 +1590,6 @@ function closeTag(context: XmlParser) {
 
 /**
  * parse Entity
- *
- * @param context
  */
 function parseEntity(context: XmlParser) {
   let entity = context.entity
@@ -1633,9 +1621,10 @@ function parseEntity(context: XmlParser) {
 
 
 /**
- * process initial whitespace
+ * Parse `STATE.BEGIN` - initial whitespace
  *
  * @remarks
+ * 
  * will change state to `STATE.OPEN_WAKA`, if lenient also `STATE.TEXT`
  *    
  */
