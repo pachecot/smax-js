@@ -119,7 +119,7 @@ export class XmlParser implements Position {
   sawRoot = false
 
   state = STATE.BEGIN
-  state_attr = STATE_ATTR.ATTRIB
+  state_attr = STATE_ATTR.NAME
   state_begin = STATE_BEGIN.BEGIN
   state_cdata = STATE_CDATA.CDATA
   state_comment = STATE_COMMENT.COMMENT
@@ -259,19 +259,18 @@ function parseXmlDeclaration(body: string): XmlDeclaration | null {
 /*
  * State Table
  * 
- * | NEXT      | ATTRIB | BEGIN | CDATA | CLOSETAG | COMMENT | DOCTYPE | OPENTAG | OPEN_WAKA | PI   | SGML | TEXT | 
- * | --------- | ------ | ----- | ----- | -------- | ------- | ------- | ------- | --------- | ---- | ---- | ---- | 
- * | ATTRIB    |        |       |       |          |         |         | e!      |           |      |      |      | 
- * | BEGIN     |        |       |       |          |         |         |         |           |      |      |      | 
- * | CDATA     |        |       |       |          |         |         |         |           |      | ok   |      | 
- * | CLOSETAG  |        |       |       |          |         |         |         |           |      |      | ok   | 
- * | COMMENT   |        |       |       |          |         |         |         |           |      | ok   |      | 
- * | DOCTYPE   |        |       |       |          |         |         |         |           |      | ok   |      | 
- * | OPENTAG   | ok     |       |       |          |         |         |         | ok        |      |      |      | 
- * | OPEN_WAKA |        | ok    |       |          |         |         |         |           |      |      | ok   | 
- * | PI        |        |       |       |          |         |         |         | ok        |      |      |      | 
- * | SGML      |        |       |       |          |         |         |         | ok        |      |      |      | 
- * | TEXT      | ok     | e!    | ok    | ok       | ok      | ok      | ok      | ok        | ok   | ok   |      | 
+ * | NEXT      | BEGIN | CDATA | CLOSETAG | COMMENT | DOCTYPE | OPENTAG | OPEN_WAKA | PI   | SGML | TEXT | 
+ * | --------- | ----- | ----- | -------- | ------- | ------- | ------- | --------- | ---- | ---- | ---- | 
+ * | BEGIN     |       |       |          |         |         |         |           |      |      |      | 
+ * | CDATA     |       |       |          |         |         |         |           |      | ok   |      | 
+ * | CLOSETAG  |       |       |          |         |         |         |           |      |      | ok   | 
+ * | COMMENT   |       |       |          |         |         |         |           |      | ok   |      | 
+ * | DOCTYPE   |       |       |          |         |         |         |           |      | ok   |      | 
+ * | OPENTAG   |       |       |          |         |         |         | ok        |      |      |      | 
+ * | OPEN_WAKA | ok    |       |          |         |         |         |           |      |      | ok   | 
+ * | PI        |       |       |          |         |         |         | ok        |      |      |      | 
+ * | SGML      |       |       |          |         |         |         | ok        |      |      |      | 
+ * | TEXT      | e!    | ok    | ok       | ok      | ok      | ok      | ok        | ok   | ok   |      | 
  * 
  */
 
@@ -365,15 +364,6 @@ const enum STATE {
   OPENTAG,
 
   /**
-   * `<a `
-   * 
-   * prev states: `OPENTAG`
-   * 
-   * next states: `TEXT`, `OPENTAG`
-   */
-  ATTRIB,
-
-  /**
    * `</a`
    * 
    * prev states: `OPEN_WAKA`
@@ -396,7 +386,8 @@ const enum STATE_CLOSETAG {
 const enum STATE_OPENTAG {
   /** `<s`                                 */ OPENTAG,
   /** `<strong/`                           */ SLASH,
-  /** `<strong `                           */ ATTRIB,
+  /** `<strong `                           */ WHITESPACE,
+  /** `<strong a`                          */ ATTRIB,
 }
 
 const enum STATE_TEXT {
@@ -438,7 +429,6 @@ const enum STATE_CDATA {
  * State Attribute 
  */
 const enum STATE_ATTR {
-  /** `<a `                                 */ ATTRIB,
   /** `<a foo`                              */ NAME,
   /** `<a foo _`                            */ NAME_WHITESPACE,
   /** `<a foo=`                             */ VALUE,
@@ -495,7 +485,6 @@ class Cursor {
 }
 
 const parserMap = {
-  [STATE.ATTRIB]: parse_attr,
   [STATE.BEGIN]: parse_begin,
   [STATE.CDATA]: parse_cdata,
   [STATE.CLOSETAG]: parse_closetag,
@@ -535,10 +524,10 @@ function parse(context: XmlParser, chunk: string) {
  * Parser for `STATE.OPEN_WAKA` - the opening `<`
  *
  * next states:
- * - `STATE.SGML`
  * - `STATE.CLOSETAG`
- * - `STATE.PI`
  * - `STATE.OPENTAG`
+ * - `STATE.PI`
+ * - `STATE.SGML`
  * - `STATE.TEXT`
  *
  * @param context
@@ -703,12 +692,12 @@ function parse_begin(context: XmlParser, cursor: Cursor) {
  * Parser for `STATE.OPENTAG` - open tag `<tagname ` or `<tagname>` or `<tagname/>`
  *
  * next states:
- * - !`STATE.ATTRIB`
  * - `STATE.TEXT`
  */
 function parse_opentag(context: XmlParser, cursor: Cursor) {
 
   while (true) {
+
     let c = context.c = cursor.nextChar()
 
     if (!c) {
@@ -730,9 +719,31 @@ function parse_opentag(context: XmlParser, cursor: Cursor) {
             if (!isWhitespace(c)) {
               strictFail(context, 'Invalid character in tag name')
             }
-            context.state = STATE.ATTRIB
+            context.state_opentag = STATE_OPENTAG.WHITESPACE
           }
         }
+        break
+
+      case STATE_OPENTAG.WHITESPACE:
+        // haven't read the attribute name yet.
+        if (isWhitespace(c)) {
+          break
+        } else if (c === '>') {
+          openTag(context)
+        } else if (c === '/') {
+          context.state_opentag = STATE_OPENTAG.SLASH
+        } else if (isMatch(nameStart, c)) {
+          context.attribName = c
+          context.attribValue = ''
+          context.state_attr = STATE_ATTR.NAME
+          context.state_opentag = STATE_OPENTAG.ATTRIB
+        } else {
+          strictFail(context, 'Invalid attribute name')
+        }
+        break
+
+      case STATE_OPENTAG.ATTRIB:
+        parse_attr(context, cursor)
         break
 
       case STATE_OPENTAG.SLASH:
@@ -741,7 +752,7 @@ function parse_opentag(context: XmlParser, cursor: Cursor) {
           closeTag(context)
         } else {
           strictFail(context, 'Forward-slash in opening tag not followed by >')
-          context.state = STATE.ATTRIB
+          context.state_opentag = STATE_OPENTAG.WHITESPACE
         }
         break
 
@@ -749,8 +760,11 @@ function parse_opentag(context: XmlParser, cursor: Cursor) {
         throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
-    if (context.state === STATE.ATTRIB
-      || context.state === STATE.TEXT) {
+    if (!context.c) {  // extra check for attrib
+      break
+    }
+
+    if (context.state === STATE.TEXT) {
       context.state_opentag = STATE_OPENTAG.OPENTAG
       break
     }
@@ -1181,36 +1195,14 @@ function parse_cdata(context: XmlParser, cursor: Cursor) {
  *
  * next states:
  * - `STATE.TEXT`
- * - `STATE.OPENTAG`
  */
 function parse_attr(context: XmlParser, cursor: Cursor) {
 
-  while (true) {
-    let c = context.c = cursor.nextChar()
+  let c = context.c
 
-    if (!c) {
-      break
-    }
+  do {
 
     switch (context.state_attr) {
-
-      case STATE_ATTR.ATTRIB:
-        // haven't read the attribute name yet.
-        if (isWhitespace(c)) {
-          break
-        } else if (c === '>') {
-          openTag(context)
-        } else if (c === '/') {
-          context.state = STATE.OPENTAG
-          context.state_opentag = STATE_OPENTAG.SLASH
-        } else if (isMatch(nameStart, c)) {
-          context.attribName = c
-          context.attribValue = ''
-          context.state_attr = STATE_ATTR.NAME
-        } else {
-          strictFail(context, 'Invalid attribute name')
-        }
-        break
 
       case STATE_ATTR.NAME:
         if (c === '=') {
@@ -1246,7 +1238,7 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
             context.state_attr = STATE_ATTR.NAME
           } else {
             strictFail(context, 'Invalid attribute name')
-            context.state_attr = STATE_ATTR.ATTRIB
+            context.state_opentag = STATE_OPENTAG.WHITESPACE
           }
         }
         break
@@ -1291,17 +1283,16 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
         if (c === '>') {
           openTag(context)
         } else {
-          context.state_attr = STATE_ATTR.ATTRIB
+          context.state_opentag = STATE_OPENTAG.WHITESPACE
         }
         break
 
       case STATE_ATTR.VALUE_CLOSED:
         if (isWhitespace(c)) {
-          context.state_attr = STATE_ATTR.ATTRIB
+          context.state_opentag = STATE_OPENTAG.WHITESPACE
         } else if (c === '>') {
           openTag(context)
         } else if (c === '/') {
-          context.state = STATE.OPENTAG
           context.state_opentag = STATE_OPENTAG.SLASH
         } else if (isMatch(nameStart, c)) {
           strictFail(context, 'No whitespace between attributes')
@@ -1333,12 +1324,18 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
         throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
-    if (context.state === STATE.OPENTAG
-      || context.state === STATE.TEXT) {
-      context.state_attr = STATE_ATTR.ATTRIB
+
+    if (context.state === STATE.TEXT) {
+      context.state_attr = STATE_ATTR.NAME
       break
     }
-  }
+    if (context.state_opentag !== STATE_OPENTAG.ATTRIB) {
+      break
+    }
+
+    c = context.c = cursor.nextChar()
+  } while (c)
+
 }
 
 
