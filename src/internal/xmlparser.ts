@@ -909,17 +909,17 @@ function parse_sgml(context: XmlParser, cursor: Cursor) {
 function parse_quoted(context: XmlParser, cursor: Cursor) {
 
   let c = context.c
-  while (true) {
+  do {
     context.quoted += c
     if (c === context.q) {
       context.q = ''
       return true
     }
+
     c = context.c = cursor.nextChar()
-    if (!c) {
-      return false
-    }
-  }
+  } while (c)
+
+  return false
 }
 
 
@@ -1348,7 +1348,7 @@ function parse_entitiy(context: XmlParser, cursor: Cursor) {
 
   let c = context.c;
 
-  while (true) {
+  do {
 
     if (c === ';') {
       const value = parseEntity(context)
@@ -1364,10 +1364,9 @@ function parse_entitiy(context: XmlParser, cursor: Cursor) {
     }
 
     c = context.c = cursor.nextChar()
-    if (!c) {
-      return ''
-    }
-  }
+  } while (c)
+
+  return ''
 }
 
 
