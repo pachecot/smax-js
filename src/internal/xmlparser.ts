@@ -798,17 +798,9 @@ function parse_text(context: XmlParser, cursor: Cursor) {
         break
 
       case STATE_TEXT.ENTITY:
-
-        if (c === ';') {
-          context.textNode += parseEntity(context)
-          context.entity = ''
-          context.state_text = STATE_TEXT.TEXT
-        } else if (isMatch(context.entity.length ? entityBody : entityStart, c)) {
-          context.entity += c
-        } else {
-          strictFail(context, 'Invalid character in entity name')
-          context.textNode += '&' + context.entity + c
-          context.entity = ''
+        const value = parse_entitiy(context, cursor)
+        if (value) {
+          context.textNode += value
           context.state_text = STATE_TEXT.TEXT
         }
         break
@@ -1288,6 +1280,11 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
         }
         break
 
+      case STATE_ATTR.VALUE_ENTITY_Q:
+        const ent_q = parse_entitiy(context, cursor)
+        if (ent_q) {
+          context.attribValue += ent_q
+          context.state_attr = STATE_ATTR.VALUE_QUOTED
       case STATE_ATTR.VALUE_UNQUOTED:
         if (!isAttribEnd(c)) {
           if (c === '&') {
@@ -1305,32 +1302,12 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
         }
         break
 
-      case STATE_ATTR.VALUE_ENTITY_Q:
       case STATE_ATTR.VALUE_ENTITY_U:
-
-        const returnState = {
-          [STATE_ATTR.VALUE_ENTITY_Q]: STATE_ATTR.VALUE_QUOTED,
-          [STATE_ATTR.VALUE_ENTITY_U]: STATE_ATTR.VALUE_UNQUOTED,
-        }[context.state_attr]
-
-        const buffer = {
-          [STATE_ATTR.VALUE_ENTITY_Q]: 'attribValue',
-          [STATE_ATTR.VALUE_ENTITY_U]: 'attribValue',
-        }[context.state_attr]
-
-        if (c === ';') {
-          context[buffer] += parseEntity(context)
-          context.entity = ''
-          context.state_attr = returnState
-        } else if (isMatch(context.entity.length ? entityBody : entityStart, c)) {
-          context.entity += c
-        } else {
-          strictFail(context, 'Invalid character in entity name')
-          context[buffer] += '&' + context.entity + c
-          context.entity = ''
-          context.state_attr = returnState
+        const ent_u = parse_entitiy(context, cursor)
+        if (ent_u) {
+          context.attribValue += ent_u
+          context.state_attr = STATE_ATTR.VALUE_UNQUOTED
         }
-
         break
 
       default:
@@ -1341,6 +1318,38 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
       || context.state === STATE.TEXT) {
       context.state_attr = STATE_ATTR.ATTRIB
       break
+    }
+  }
+}
+
+
+
+
+/**
+ * Parser for entity - `&xxxx;`
+ */
+function parse_entitiy(context: XmlParser, cursor: Cursor) {
+
+  let c = context.c;
+
+  while (true) {
+
+    if (c === ';') {
+      const value = parseEntity(context)
+      context.entity = ''
+      return value
+    } else if (isMatch(context.entity.length ? entityBody : entityStart, c)) {
+      context.entity += c
+    } else {
+      strictFail(context, 'Invalid character in entity name')
+      const value = '&' + context.entity + c
+      context.entity = ''
+      return value
+    }
+
+    c = context.c = cursor.nextChar()
+    if (!c) {
+      return ''
     }
   }
 }
