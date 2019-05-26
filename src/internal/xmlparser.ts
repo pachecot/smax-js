@@ -125,7 +125,7 @@ export class XmlParser implements Position {
   state_closetag = STATE_CLOSETAG.CLOSETAG
   state_doctype = STATE_DOCTYPE.DOCTYPE
   state_pi = STATE_PI.PI
-  state_sgmldecl = STATE_SGML_DECL.SGML_DECL
+  state_sgmldecl = STATE_SGML.DECL
   state_text = STATE_TEXT.TEXT
   state_opentag = STATE_OPENTAG.OPENTAG
 
@@ -316,7 +316,7 @@ const enum STATE {
    * 
    * next states: `CDATA`, `COMMENT`, `DOCTYPE`, `TEXT`
    */
-  SGML_DECL,
+  SGML,
 
   /**
    * `<!DOCTYPE`
@@ -403,8 +403,8 @@ const enum STATE_TEXT {
   /** &amp and such.                        */ ENTITY,
 }
 
-const enum STATE_SGML_DECL {
-  /** `<!BLARG`                             */ SGML_DECL,
+const enum STATE_SGML {
+  /** `<!BLARG`                             */ DECL,
   /** `<!BLARG foo "bar`                    */ QUOTED,
 }
 
@@ -439,7 +439,7 @@ const enum STATE_CDATA {
 const enum STATE_ATTR {
   /** `<a `                                 */ ATTRIB,
   /** `<a foo`                              */ NAME,
-  /** `<a foo _`                            */ NAME_SAW_WHITE,
+  /** `<a foo _`                            */ NAME_WHITESPACE,
   /** `<a foo=`                             */ VALUE,
   /** `<a foo="bar`                         */ VALUE_QUOTED,
   /** `<a foo="bar"`                        */ VALUE_CLOSED,
@@ -503,7 +503,7 @@ const parserMap = {
   [STATE.OPENTAG]: parse_opentag,
   [STATE.OPEN_WAKA]: parse_waka,
   [STATE.PI]: parse_pi,
-  [STATE.SGML_DECL]: parse_sgml_decl,
+  [STATE.SGML]: parse_sgml,
   [STATE.TEXT]: parse_text,
 }
 
@@ -557,7 +557,7 @@ function parse_waka(context: XmlParser, cursor: Cursor) {
       case STATE.OPEN_WAKA:
         // either a /, ?, !, or text is coming next.
         if (c === '!') {
-          context.state = STATE.SGML_DECL
+          context.state = STATE.SGML
           context.sgmlDecl = ''
         } else if (c === '/') {
           context.state = STATE.CLOSETAG
@@ -587,14 +587,14 @@ function parse_waka(context: XmlParser, cursor: Cursor) {
         throw new Error('Unknown state: ' + context.state)
     }
 
-    if (context.state === STATE.SGML_DECL
+    if (context.state === STATE.SGML
       || context.state === STATE.CLOSETAG
       || context.state === STATE.PI
       || context.state === STATE.OPENTAG
       || context.state === STATE.TEXT) {
       break
     }
-  } // while
+  }
 }
 
 /**
@@ -835,10 +835,10 @@ function parse_text(context: XmlParser, cursor: Cursor) {
  * - `STATE.DOCTYPE`
  * - `STATE.TEXT`
  */
-function parse_sgml_decl(context: XmlParser, cursor: Cursor) {
+function parse_sgml(context: XmlParser, cursor: Cursor) {
 
-  if (context.state !== STATE.SGML_DECL) {
-    throw new Error('Illegal state: ' + context.state + ' expexted: ' + STATE.SGML_DECL)
+  if (context.state !== STATE.SGML) {
+    throw new Error('Illegal state: ' + context.state + ' expexted: ' + STATE.SGML)
   }
 
   while (true) {
@@ -849,7 +849,7 @@ function parse_sgml_decl(context: XmlParser, cursor: Cursor) {
     }
 
     switch (context.state_sgmldecl) {
-      case STATE_SGML_DECL.SGML_DECL:
+      case STATE_SGML.DECL:
         if ((context.sgmlDecl + c).toUpperCase() === CDATA) {
           emitNode(context, 'opencdata')
           context.state = STATE.CDATA
@@ -871,17 +871,17 @@ function parse_sgml_decl(context: XmlParser, cursor: Cursor) {
           context.sgmlDecl = ''
           context.state = STATE.TEXT
         } else if (isQuote(c)) {
-          context.state_sgmldecl = STATE_SGML_DECL.QUOTED
+          context.state_sgmldecl = STATE_SGML.QUOTED
           context.sgmlDecl += c
         } else {
           context.sgmlDecl += c
         }
         break
 
-      case STATE_SGML_DECL.QUOTED:
+      case STATE_SGML.QUOTED:
         if (c === context.q) {
-          context.state_sgmldecl = STATE_SGML_DECL.SGML_DECL
           context.q = ''
+          context.state_sgmldecl = STATE_SGML.DECL
         }
         context.sgmlDecl += c
         break
@@ -894,7 +894,7 @@ function parse_sgml_decl(context: XmlParser, cursor: Cursor) {
       || context.state === STATE.COMMENT
       || context.state === STATE.DOCTYPE
       || context.state === STATE.TEXT) {
-      context.state_sgmldecl = STATE_SGML_DECL.SGML_DECL
+      context.state_sgmldecl = STATE_SGML.DECL
       break
     }
   }
@@ -1213,7 +1213,7 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
           attrib(context)
           openTag(context)
         } else if (isWhitespace(c)) {
-          context.state_attr = STATE_ATTR.NAME_SAW_WHITE
+          context.state_attr = STATE_ATTR.NAME_WHITESPACE
         } else if (isMatch(nameBody, c)) {
           context.attribName += c
         } else {
@@ -1221,7 +1221,7 @@ function parse_attr(context: XmlParser, cursor: Cursor) {
         }
         break
 
-      case STATE_ATTR.NAME_SAW_WHITE:
+      case STATE_ATTR.NAME_WHITESPACE:
         if (c === '=') {
           context.state_attr = STATE_ATTR.VALUE
         } else if (isWhitespace(c)) {
