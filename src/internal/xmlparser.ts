@@ -122,13 +122,13 @@ export class XmlParser implements Position {
   state_attr = STATE_ATTR.NAME
   state_begin = STATE_BEGIN.BEGIN
   state_cdata = STATE_CDATA.CDATA
-  state_comment = STATE_COMMENT.COMMENT
   state_closetag = STATE_CLOSETAG.CLOSETAG
+  state_comment = STATE_COMMENT.COMMENT
   state_doctype = STATE_DOCTYPE.DOCTYPE
-  state_pi = STATE_PI.PI
-  state_sgmldecl = STATE_SGML.DECL
-  state_text = STATE_TEXT.TEXT
   state_opentag = STATE_OPENTAG.OPENTAG
+  state_pi = STATE_PI.PI
+  state_sgml = STATE_SGML.DECL
+  state_text = STATE_TEXT.TEXT
 
   tag: XmlTag = NULL_TAG
   error: Error | null = null
@@ -259,21 +259,17 @@ function parseXmlDeclaration(body: string): XmlDeclaration | null {
 /*
  * State Table
  * 
- * | NEXT      | BEGIN | CDATA | CLOSETAG | COMMENT | DOCTYPE | OPENTAG | OPEN_WAKA | PI   | SGML | TEXT | 
- * | --------- | ----- | ----- | -------- | ------- | ------- | ------- | --------- | ---- | ---- | ---- | 
- * | BEGIN     |       |       |          |         |         |         |           |      |      |      | 
- * | CDATA     |       |       |          |         |         |         |           |      | ok   |      | 
- * | CLOSETAG  |       |       |          |         |         |         |           |      |      | ok   | 
- * | COMMENT   |       |       |          |         |         |         |           |      | ok   |      | 
- * | DOCTYPE   |       |       |          |         |         |         |           |      | ok   |      | 
- * | OPENTAG   |       |       |          |         |         |         | ok        |      |      |      | 
- * | OPEN_WAKA | ok    |       |          |         |         |         |           |      |      | ok   | 
- * | PI        |       |       |          |         |         |         | ok        |      |      |      | 
- * | SGML      |       |       |          |         |         |         | ok        |      |      |      | 
- * | TEXT      | e!    | ok    | ok       | ok      | ok      | ok      | ok        | ok   | ok   |      | 
+ * | NEXT           | BEGIN | CLOSETAG | OPENTAG | OPEN_WAKA | PI   | SGML | TEXT | 
+ * | -------------- | ----- | -------- | ------- | --------- | ---- | ---- | ---- | 
+ * | BEGIN      <-- |       |          |         |           |      |      |      | 
+ * | OPEN_WAKA  <-- | ok    |          |         |           |      |      | ok   | 
+ * | CLOSETAG   <-- |       |          |         | ok        |      |      |      | 
+ * | OPENTAG    <-- |       |          |         | ok        |      |      |      | 
+ * | PI         <-- |       |          |         | ok        |      |      |      | 
+ * | SGML       <-- |       |          |         | ok        |      |      |      | 
+ * | TEXT       <-- | e!    | ok       | ok      | ok        | ok   | ok   |      | 
  * 
  */
-
 
 /**
  * 
@@ -284,7 +280,7 @@ const enum STATE {
    * initial state
    * leading byte order mark or whitespace
    * 
-   * prev states: `*`
+   * prev states:
    * 
    * next states: `OPEN_WAKA`
    * 
@@ -319,34 +315,7 @@ const enum STATE {
   SGML,
 
   /**
-   * `<!DOCTYPE`
-   * 
-   * prev states: `SGML`
-   * 
-   * next states: `TEXT`
-   */
-  DOCTYPE,
-
-  /**
-   *  `<!--`
-   * 
-   * prev states: `SGML`
-   * 
-   * next states: `TEXT`
-   */
-  COMMENT,
-
-  /**
-   * `<![CDATA[ something`
-   * 
-   * prev states: `SGML`
-   * 
-   * next states: `TEXT`
-   */
-  CDATA,
-
-  /**
-   * `<?hi`
+   * processing instruction `<?hi` 
    * 
    * prev states: `OPEN_WAKA`
    * 
@@ -398,6 +367,9 @@ const enum STATE_TEXT {
 const enum STATE_SGML {
   /** `<!BLARG`                             */ DECL,
   /** `<!BLARG foo "bar`                    */ QUOTED,
+  /** `<!--`                                */ COMMENT,
+  /** `<!DOCTYPE `                          */ DOCTYPE,
+  /** <![CDATA[ something`                  */ CDATA,
 }
 
 const enum STATE_COMMENT {
@@ -486,10 +458,7 @@ class Cursor {
 
 const parserMap = {
   [STATE.BEGIN]: parse_begin,
-  [STATE.CDATA]: parse_cdata,
   [STATE.CLOSETAG]: parse_closetag,
-  [STATE.COMMENT]: parse_comment,
-  [STATE.DOCTYPE]: parse_doctype,
   [STATE.OPENTAG]: parse_opentag,
   [STATE.OPEN_WAKA]: parse_waka,
   [STATE.PI]: parse_pi,
@@ -854,19 +823,19 @@ function parse_sgml(context: XmlParser, cursor: Cursor) {
       break
     }
 
-    switch (context.state_sgmldecl) {
+    switch (context.state_sgml) {
       case STATE_SGML.DECL:
         if ((context.sgmlDecl + c).toUpperCase() === CDATA) {
           emitNode(context, 'opencdata')
-          context.state = STATE.CDATA
+          context.state_sgml = STATE_SGML.CDATA
           context.sgmlDecl = ''
           context.cdata = ''
         } else if (context.sgmlDecl + c === '--') {
-          context.state = STATE.COMMENT
+          context.state_sgml = STATE_SGML.COMMENT
           context.comment = ''
           context.sgmlDecl = ''
         } else if ((context.sgmlDecl + c).toUpperCase() === DOCTYPE) {
-          context.state = STATE.DOCTYPE
+          context.state_sgml = STATE_SGML.DOCTYPE
           if (context.doctype || context.sawRoot) {
             strictFail(context, 'Inappropriately located doctype declaration')
           }
@@ -877,7 +846,7 @@ function parse_sgml(context: XmlParser, cursor: Cursor) {
           context.sgmlDecl = ''
           context.state = STATE.TEXT
         } else if (isQuote(c)) {
-          context.state_sgmldecl = STATE_SGML.QUOTED
+          context.state_sgml = STATE_SGML.QUOTED
           context.quoted = context.q = c
         } else {
           context.sgmlDecl += c
@@ -888,19 +857,32 @@ function parse_sgml(context: XmlParser, cursor: Cursor) {
         if (parse_quoted(context, cursor)) {
           context.sgmlDecl += context.quoted
           context.quoted = ''
-          context.state_sgmldecl = STATE_SGML.DECL
+          context.state_sgml = STATE_SGML.DECL
         }
+        break
+
+      case STATE_SGML.COMMENT:
+        parse_comment(context, cursor)
+        break
+
+      case STATE_SGML.DOCTYPE:
+        parse_doctype(context, cursor)
+        break
+
+      case STATE_SGML.CDATA:
+        parse_cdata(context, cursor)
         break
 
       default:
         throw new Error('Illegal or Unknown state: ' + context.state)
     }
 
-    if (context.state === STATE.CDATA
-      || context.state === STATE.COMMENT
-      || context.state === STATE.DOCTYPE
-      || context.state === STATE.TEXT) {
-      context.state_sgmldecl = STATE_SGML.DECL
+    if (!context.c) {
+      break
+    }
+
+    if (context.state === STATE.TEXT) {
+      context.state_sgml = STATE_SGML.DECL
       break
     }
   }
@@ -931,12 +913,9 @@ function parse_quoted(context: XmlParser, cursor: Cursor) {
  */
 function parse_comment(context: XmlParser, cursor: Cursor) {
 
-  while (true) {
-    let c = context.c = cursor.nextChar()
+  let c = context.c
 
-    if (!c) {
-      break
-    }
+  do {
 
     switch (context.state_comment) {
       case STATE_COMMENT.COMMENT:
@@ -981,18 +960,21 @@ function parse_comment(context: XmlParser, cursor: Cursor) {
       context.state_comment = STATE_COMMENT.COMMENT
       break
     }
-  }
+
+    c = context.c = cursor.nextChar()
+  } while (c)
+
 }
 
 /**
  * Parser for `STATE.PI` - processing instruction `<?foo body?>`
  *
- * next states:
- * - `STATE.TEXT`
- *
- * @param context
- * @param cursor
- */
+* next states:
+* - `STATE.TEXT`
+*
+* @param context
+* @param cursor
+*/
 function parse_pi(context: XmlParser, cursor: Cursor) {
 
   while (true) {
@@ -1068,12 +1050,9 @@ function parse_pi(context: XmlParser, cursor: Cursor) {
  */
 function parse_doctype(context: XmlParser, cursor: Cursor) {
 
-  while (true) {
-    let c = context.c = cursor.nextChar()
+  let c = context.c
 
-    if (!c) {
-      break
-    }
+  do {
 
     switch (context.state_doctype) {
       case STATE_DOCTYPE.DOCTYPE:
@@ -1125,7 +1104,9 @@ function parse_doctype(context: XmlParser, cursor: Cursor) {
     if (context.state === STATE.TEXT) {
       break
     }
-  }
+
+    c = context.c = cursor.nextChar()
+  } while (c)
 }
 
 
@@ -1137,13 +1118,9 @@ function parse_doctype(context: XmlParser, cursor: Cursor) {
  */
 function parse_cdata(context: XmlParser, cursor: Cursor) {
 
-  while (true) {
-    let c = context.c = cursor.nextChar()
+  let c = context.c
 
-    if (!c) {
-      break
-    }
-
+  do {
     switch (context.state_cdata) {
       case STATE_CDATA.CDATA:
         if (c === ']') {
@@ -1186,7 +1163,9 @@ function parse_cdata(context: XmlParser, cursor: Cursor) {
       context.state_cdata = STATE_CDATA.CDATA
       break
     }
-  }
+
+    c = context.c = cursor.nextChar()
+  } while (c)
 }
 
 
