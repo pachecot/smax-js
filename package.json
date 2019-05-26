@@ -1,12 +1,11 @@
 {
-  "name": "ssax",
+  "name": "smax",
   "description": "An streaming XML parser in JavaScript",
   "author": "Tom Pacheco <tomp@netp.org>",
-  "version": "1.2.4-1",
+  "version": "2.0.0",
   "main": "lib/index.js",
   "license": "ISC",
   "scripts": {
-    "build-rollup": "tsc && rollup build/index.js --format cjs --file lib/index.js",
     "build": "tsc",
     "test": "tap test/*.js --cov -j4",
     "posttest": "standard --fix test/*.js",
