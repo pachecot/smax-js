@@ -9,6 +9,8 @@ A message based XML stream parser
 Designed with [node](http://nodejs.org/) in mind, but should work fine in
 the browser or other CommonJS implementations.
 
+Based on https://github.com/isaacs/sax-js and converted to typescript. 
+
 ## What This Is
 
 * A very simple tool to parse through an XML string.
